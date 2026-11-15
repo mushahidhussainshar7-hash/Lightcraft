@@ -37,11 +37,17 @@ canvas{max-width:100%;max-height:100%;object-fit:contain}
 #tools{border-top:1px solid var(--line)}
 #tools button{flex:1 0 66px;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border-radius:0;color:var(--dim);font-size:11px;padding:9px 4px 7px}
 #tools button.on{color:var(--ac)}#tools svg{width:22px;height:22px}
+label.btn{display:inline-block;color:var(--txt);background:var(--s2);border-radius:18px;padding:8px 15px;font-size:14px}
+label.btn.main{background:var(--ac);color:#1a1405;font-weight:700}
+#home label{display:block;width:230px;margin:10px auto;padding:15px;font-size:16px;text-align:center}
+#sub{gap:6px;padding:6px 12px 0}#sub button{flex:none;padding:6px 14px;font-size:13px;border-radius:8px;color:var(--dim)}#sub button.on{background:var(--ac);color:#1a1405}
+#toast{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:#000d;padding:8px 14px;border-radius:14px;font-size:13px;z-index:5;max-width:90%;text-align:center}
+#zrow{display:flex;justify-content:center;align-items:center;gap:8px;padding:6px;font-size:13px}#zrow button{padding:6px 10px;font-size:12px;background:#26262a}
 .hide{display:none!important}
 #cam{position:fixed;inset:0;background:#000;z-index:9;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0)}
 #camtop{display:flex;justify-content:space-between;padding:10px 12px;gap:6px}
 #camtop button{background:#26262a;padding:8px 12px;font-size:13px}
-#vid{flex:1;min-height:0;width:100%;object-fit:contain}
+#vw{flex:1;min-height:0;overflow:hidden}#vid{width:100%;height:100%;object-fit:contain}
 #camctl{max-height:32%;overflow-y:auto;padding:6px 16px;background:var(--s)}
 .crow{display:grid;grid-template-columns:84px 1fr 44px;gap:8px;align-items:center;margin:6px 0;font-size:13px}
 .crow input{width:100%;accent-color:var(--ac)}
@@ -49,27 +55,28 @@ canvas{max-width:100%;max-height:100%;object-fit:contain}
 #shot{width:72px;height:72px;border-radius:50%;background:#fff;border:5px solid #777;padding:0}
 </style></head><body>
 <div id="app">
-<header><h1>LightCraft</h1><div><button id="open">Open</button><button id="save" class="main hide">Export</button></div></header>
-<div id="stage"><div id="home"><h2>LightCraft</h2><p>Edit like a pro, right on your phone</p><button id="open2" class="main">Open photo</button><button id="cam2">Camera</button></div><canvas id="cv" hidden></canvas><button id="cmp" class="hide">Compare</button></div>
+<header><h1>LightCraft</h1><div><button id="gear">AI setup</button><label id="open" class="btn" for="file">Open</label><button id="save" class="main hide">Export</button></div></header>
+<div id="stage"><div id="home"><h2>LightCraft</h2><p>Edit like a pro, right on your phone</p><label id="open2" class="btn main" for="file">Open photo</label><button id="cam2">Camera</button></div><canvas id="cv" hidden></canvas><button id="cmp" class="hide">Compare</button><div id="toast" class="hide"></div></div>
 <div id="sheet" class="hide"><div id="sbox"><div id="srow"><span id="sn"></span><button id="sv">0</button></div><div id="trk"><div id="rail"><div id="fill"></div></div><div id="thumb"></div></div></div>
-<div id="mix" class="strip hide"></div><div id="chips" class="strip"></div><nav id="tools" class="strip"></nav></div>
+<div id="sub" class="strip hide"></div><div id="mix" class="strip hide"></div><div id="chips" class="strip"></div><nav id="tools" class="strip"></nav></div>
 </div>
 <div id="cam" class="hide"><div id="camtop"><button id="cx">Close</button><button id="fl">Flash off</button><button id="aitog" class="on">AI</button><button id="cf">Flip</button></div>
-<video id="vid" playsinline autoplay muted></video><div id="camctl" class="hide"></div>
-<div class="camrow"><button id="pro">Pro</button><button id="shot"></button><span style="width:60px"></span></div></div>
-<input type="file" id="file" accept="image/*" hidden>
+<div id="vw"><video id="vid" playsinline autoplay muted></video></div><div id="zrow"><button id="evm">EV -</button><span id="evl">EV 0.0</span><button id="evp">EV +</button><button id="zm">Zoom -</button><span id="zl">1.0x</span><button id="zp">Zoom +</button></div><div id="camctl" class="hide"></div>
+<div class="camrow"><button id="pro">Pro</button><button id="shot"></button><button id="vm">Vol: Shutter</button></div></div>
+<input type="file" id="file" accept="image/*" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
 <script>
 
 const $=id=>document.getElementById(id);
 const S=[
 ["exposure","Exposure",-2,2,0,"light"],["brightness","Brightness",-1,1,0,"light"],["contrast","Contrast",-1,1,0,"light"],["highlights","Highlights",-1,1,0,"light"],["shadows","Shadows",-1,1,0,"light"],["whites","Whites",-1,1,0,"light"],["blacks","Blacks",-1,1,0,"light"],["vignette","Vignette",0,1,0,"light"],["grain","Grain",0,1,0,"light"],
 ["temp","Temperature",-1,1,0,"color"],["tint","Tint",-1,1,0,"color"],["vibrance","Vibrance",-1,1,0,"color"],["saturation","Saturation",-1,1,0,"color"],
-["gsH","Hue",0,1,0,"color"],["gsS","Strength",0,1,0,"color"],["gmH","Hue",0,1,0,"color"],["gmS","Strength",0,1,0,"color"],["ghH","Hue",0,1,0,"color"],["ghS","Strength",0,1,0,"color"],
+["gsH","H",0,1,0,"c"],["gsS","S",0,1,0,"c"],["gsL","L",-1,1,0,"c"],["gsB","B",-1,1,0,"c"],["gsK","K",0,1,.5,"c"],["gmH","H",0,1,0,"c"],["gmS","S",0,1,0,"c"],["gmL","L",-1,1,0,"c"],["gmB","B",-1,1,0,"c"],["gmK","K",0,1,.5,"c"],["ghH","H",0,1,0,"c"],["ghS","S",0,1,0,"c"],["ghL","L",-1,1,0,"c"],["ghB","B",-1,1,0,"c"],["ghK","K",0,1,.5,"c"],["ggH","H",0,1,0,"c"],["ggS","S",0,1,0,"c"],["ggL","L",-1,1,0,"c"],
 ["texAmt","Texture",-1,1,0,"detail"],["clarity","Clarity",-1,1,0,"detail"],["dehaze","Dehaze",-1,1,0,"detail"],
 ["sharpen","Amount",0,1,0,"sharpen"],["sradius","Radius",.5,3,1,"sharpen"],["smask","Masking",0,1,0,"sharpen"],["nrl","Luminance",0,1,0,"sharpen"],["nrc","Color",0,1,0,"sharpen"],
-["bamt","Strength",0,1,.5,"blur"],["bfocus","Focus size",.1,1,.35,"blur"],["bfeather","Feather",0,1,.3,"blur"]];
+["bamt","Strength",0,1,.5,"blur"],["bfocus","Focus size",.1,1,.35,"blur"],["bfeather","Feather",0,1,.3,"blur"],["dist","Distortion",-1,1,0,"o"],["lvig","Vignetting",-1,1,0,"o"],["ca","Chromatic aberration",0,1,0,"o"]];
 const HD={temp:"White balance",gsH:"Color grading: shadows",gmH:"Color grading: midtones",ghH:"Color grading: highlights",nrl:"Noise reduction"};
 const P={Warm:{temp:.35,vibrance:.2,contrast:.1},Cool:{temp:-.35,tint:.05,contrast:.1},Film:{contrast:.2,blacks:.3,saturation:-.15,grain:.4,vignette:.3,temp:.1},Punch:{contrast:.3,vibrance:.4,saturation:.15,shadows:.2,sharpen:.3},Mono:{saturation:-1,contrast:.25,grain:.2}};
+Object.assign(P,{Cinematic:{contrast:.25,saturation:-.1,temp:-.1,gsH:.52,gsS:.25,ghH:.08,ghS:.2,blacks:.2,vignette:.2},Matte:{blacks:.4,contrast:-.1,saturation:-.1,highlights:-.2},"Golden hour":{temp:.45,vibrance:.3,highlights:-.2,shadows:.2,ghH:.1,ghS:.25},Moody:{exposure:-.3,contrast:.25,saturation:-.25,vignette:.4,shadows:-.2},Airy:{exposure:.3,brightness:.1,contrast:-.15,whites:.3,saturation:-.1,temp:.1},Vintage:{saturation:-.25,temp:.25,grain:.35,blacks:.3,vignette:.3,gsH:.5,gsS:.15},Crisp:{contrast:.2,clarity:.35,texAmt:.3,sharpen:.5,vibrance:.2},"B&W High":{saturation:-1,contrast:.45,clarity:.3,grain:.25}});
 try{Object.assign(P,JSON.parse(localStorage.getItem("lc_presets")||"{}"));}catch(e){}
 const V={};S.forEach(s=>V[s[0]]=s[4]);
 const HS=Array.from({length:8},()=>[0,0,0]);
@@ -80,7 +87,7 @@ const cv=$("cv"),gl=cv.getContext("webgl",{preserveDrawingBuffer:true,antialias:
 const vs="attribute vec2 p;varying vec2 uv;void main(){uv=p*.5+.5;gl_Position=vec4(p,0.,1.);}";
 const fs=`precision highp float;varying vec2 uv;uniform sampler2D t,mk;uniform float bypass,bmode;
 uniform mat2 M;uniform vec2 cs,ss,tx,bc,qo;uniform vec3 hsl[8];
-uniform float exposure,brightness,contrast,highlights,shadows,whites,blacks,temp,tint,vibrance,saturation,gsH,gsS,gmH,gmS,ghH,ghS,texAmt,clarity,dehaze,sharpen,sradius,smask,nrl,nrc,bamt,bfocus,bfeather,vignette,grain;
+uniform float exposure,brightness,contrast,highlights,shadows,whites,blacks,temp,tint,vibrance,saturation,gsH,gsS,gsL,gsB,gsK,gmH,gmS,gmL,gmB,gmK,ghH,ghS,ghL,ghB,ghK,ggH,ggS,ggL,dist,lvig,ca,texAmt,clarity,dehaze,sharpen,sradius,smask,nrl,nrc,bamt,bfocus,bfeather,vignette,grain;
 float h(vec2 s){return fract(sin(dot(s,vec2(12.9898,78.233)))*43758.5453);}
 vec3 smp(vec2 q){return texture2D(t,q).rgb;}
 vec3 bl(vec2 q,float r){return(smp(q+vec2(tx.x,0.)*r)+smp(q-vec2(tx.x,0.)*r)+smp(q+vec2(0.,tx.y)*r)+smp(q-vec2(0.,tx.y)*r))*.25;}
@@ -90,7 +97,9 @@ vec3 hsv2rgb(vec3 c){vec4 K=vec4(1.,2./3.,1./3.,3.);vec3 p=abs(fract(c.xxx+K.xyz
 float cn(int i){if(i==0)return 0.;if(i==1)return .0833;if(i==2)return .1667;if(i==3)return .3333;if(i==4)return .5;if(i==5)return .625;if(i==6)return .75;return .875;}
 void main(){
  vec2 ou=vec2(uv.x,1.-uv.y);vec2 q=(M*((ou-.5)*cs)+qo)/ss+.5;
- vec3 o=smp(q);
+ vec2 vq=q-.5;vec2 vn=vq*ss/length(ss);float r2=dot(vn,vn)*4.;
+ q=.5+vq*(1.-dist*.25*r2);
+ vec3 o;if(ca>0.){vec2 sh2=vq*ca*.02*r2;o=vec3(smp(q+sh2).r,smp(q).g,smp(q-sh2).b);}else o=smp(q);
  if(bypass>.5){gl_FragColor=vec4(o,1.);return;}
  if(bamt>0.&&bmode>.5){float m;
   if(bmode<1.5){m=smoothstep(bfocus,bfocus+.01+bfeather,length((ou-bc)*cs/min(cs.x,cs.y)));}
@@ -113,15 +122,19 @@ void main(){
  for(int i=0;i<8;i++){float d=abs(hv.x-cn(i));d=min(d,1.-d);float w=(1.-smoothstep(0.,.11,d))*smoothstep(0.,.15,hv.y);dh+=w*hsl[i].x;ds+=w*hsl[i].y;dl+=w*hsl[i].z;}
  hv.x=fract(hv.x+dh*.08);hv.y=clamp(hv.y*(1.+ds),0.,1.);hv.z*=1.+dl*.5;c=hsv2rgb(hv);
  float lg=lu(c);
- c+=(hsv2rgb(vec3(gsH,1.,1.))-.5)*gsS*.35*(1.-smoothstep(0.,.5,lg));
- c+=(hsv2rgb(vec3(gmH,1.,1.))-.5)*gmS*.3*(1.-abs(2.*lg-1.));
- c+=(hsv2rgb(vec3(ghH,1.,1.))-.5)*ghS*.35*smoothstep(.5,1.,lg);
+ float kS=.05+gsK*.3,pS=.3+gsB*.15,kH=.05+ghK*.3,pH=.7+ghB*.15;
+ float wS=1.-smoothstep(pS-kS,pS+kS,lg),wH=smoothstep(pH-kH,pH+kH,lg),wM=1.-smoothstep(0.,.2+gmK*.4,abs(lg-(.5+gmB*.2)));
+ c+=(hsv2rgb(vec3(gsH,1.,1.))-.5)*gsS*.35*wS+gsL*.3*wS;
+ c+=(hsv2rgb(vec3(gmH,1.,1.))-.5)*gmS*.3*wM+gmL*.3*wM;
+ c+=(hsv2rgb(vec3(ghH,1.,1.))-.5)*ghS*.35*wH+ghL*.3*wH;
+ c+=(hsv2rgb(vec3(ggH,1.,1.))-.5)*ggS*.3+ggL*.25;
  if(dehaze>0.){c=(c-dehaze*.2)/(1.-dehaze*.2);c=mix(vec3(lu(c)),c,1.+dehaze*.3);}else if(dehaze<0.){c=mix(c,vec3(.75),-dehaze*.25);}
  float mid=1.-abs(2.*lu(o)-1.);
  if(texAmt!=0.)c+=(o-bl(q,2.))*texAmt*1.5;
  if(clarity!=0.)c+=(o-bl(q,10.))*clarity*1.5*mid;
  if(sharpen>0.){vec3 d=o-bl(q,sradius*1.5);float e=abs(lu(d));float mm=smask>0.?smoothstep(smask*.04,smask*.04+.03,e):1.;c+=d*sharpen*2.5*mm;}
  c*=1.-vignette*smoothstep(.3,.95,distance(ou,vec2(.5)));
+ c*=1.+lvig*.6*smoothstep(.25,1.,distance(ou,vec2(.5))*1.414);
  c+=(h(ou*cs*.37)-.5)*grain*.25;
  gl_FragColor=vec4(clamp(c,0.,1.),1.);}`;
 function sh(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);return s;}
@@ -158,11 +171,12 @@ function draw(){raf=0;if(!loaded)return;
 function queue(){if(!raf)raf=requestAnimationFrame(draw);}
 /* ===== Lightroom-style UI ===== */
 const RB="linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)";
-const LBL={temp:"Temperature",gsH:"Shadow hue",gsS:"Shadow amount",gmH:"Mid hue",gmS:"Mid amount",ghH:"Highlight hue",ghS:"Highlight amount",texAmt:"Texture",sharpen:"Sharpening",sradius:"Radius",smask:"Masking",nrl:"Noise reduction",nrc:"Color noise",bamt:"Blur strength",bfocus:"Focus size",bfeather:"Feather"};
-const BG={temp:"linear-gradient(90deg,#3d7be0,#ddd,#f0b429)",tint:"linear-gradient(90deg,#4caf50,#ddd,#d44c9c)",gsH:RB,gmH:RB,ghH:RB};
+const LBL={temp:"Temperature",texAmt:"Texture",sharpen:"Sharpening",sradius:"Radius",smask:"Masking",nrl:"Noise reduction",nrc:"Color noise",bamt:"Blur strength",bfocus:"Focus size",bfeather:"Feather"};
+[["gs","Shadows"],["gm","Midtones"],["gh","Highlights"],["gg","Global"]].forEach(([r,n])=>{LBL[r+"H"]=n+" hue";LBL[r+"S"]=n+" saturation";LBL[r+"L"]=n+" luminance";LBL[r+"B"]=n+" balance";LBL[r+"K"]=n+" blending";});
+const BG={temp:"linear-gradient(90deg,#3d7be0,#ddd,#f0b429)",tint:"linear-gradient(90deg,#4caf50,#ddd,#d44c9c)",gsH:RB,gmH:RB,ghH:RB,ggH:RB};
 const PR={};let aiS=1,aiTarget={},ratioSel="",ratioAB=[0,1];
 S.forEach(s=>PR[s[0]]={label:LBL[s[0]]||s[1],min:s[2],max:s[3],def:s[4],bg:BG[s[0]],get:()=>V[s[0]],set:v=>{V[s[0]]=v;queue();}});
-["bamt","bfocus","bfeather"].forEach(k=>PR[k].uni=true);
+["bamt","bfocus","bfeather","gsK","gmK","ghK"].forEach(k=>PR[k].uni=true);
 PR.ai={label:"AI strength",min:0,max:1,def:1,get:()=>aiS,set:v=>{aiS=v;applyAI();}};
 ["Hue","Saturation","Luminance"].forEach((n,k)=>PR["hsl"+k]={label:n,min:-1,max:1,def:0,bg:k?null:RB,get:()=>HS[selC][k],set:v=>{HS[selC][k]=v;queue();}});
 PR.ang={label:"Straighten",min:-30,max:30,def:0,get:()=>crop.ang,set:v=>{crop.ang=v;layout();}};
@@ -188,28 +202,43 @@ trk.addEventListener("pointerup",e=>{if(!drag)return;if(!drag.m){const r=thumb.g
 trk.addEventListener("pointercancel",()=>drag=null);
 $("sv").onclick=()=>{if(!cur)return;PR[cur].set(PR[cur].def);refresh();};
 function refresh(){[...$("chips").children].forEach((b,i)=>{const it=items[i];if(!it)return;b.classList.toggle("on",it.p?it.p==cur:!!(it.on&&it.on()));b.classList.toggle("mod",!!it.p&&isMod(it.p));});showSlider();}
+let ST=null,subSel={};
 const L7=["exposure","brightness","contrast","highlights","shadows","whites","blacks"],pp=a=>a.map(p=>({p}));
 const RT=[["Original",0,0],["1:1",1,1],["5:4",5,4],["4:3",4,3],["3:2",3,2],["16:9",16,9],["2:1",2,1],["21:9",21,9],["7:5",7,5]];
 const BAL=["exposure","contrast","highlights","shadows","whites","blacks","temp","tint"],GRD=["vibrance","gsH","gsS","ghH","ghS"];
 const svg=s=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${s}</svg>`;
-const IC={auto:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16v4M17 18h4"/>',light:'<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',color:'<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>',mixer:'<circle cx="9" cy="9" r="5"/><circle cx="15" cy="9" r="5"/><circle cx="12" cy="15" r="5"/>',grade:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/>',fx:'<rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="12" cy="12" r="5"/>',detail:'<path d="M3 19l6-10 4 6 3-4 5 8z"/>',sharp:'<path d="M12 3l9 17H3z"/>',blur:'<circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7" stroke-dasharray="2 3"/>',crop:'<path d="M7 2v15h15M2 7h15v15"/>',presets:'<path d="M4 6h8M18 6h2M4 12h2M12 12h8M4 18h10M20 18h0"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>',camera:'<path d="M3 8h4l2-3h6l2 3h4v11H3z"/><circle cx="12" cy="13" r="3.5"/>'};
+const IC={auto:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16v4M17 18h4"/>',light:'<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',color:'<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>',fx:'<rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="12" cy="12" r="5"/>',detail:'<path d="M3 19l6-10 4 6 3-4 5 8z"/>',sharp:'<path d="M12 3l9 17H3z"/>',blur:'<circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7" stroke-dasharray="2 3"/>',optics:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/>',crop:'<path d="M7 2v15h15M2 7h15v15"/>',presets:'<path d="M4 6h8M18 6h2M4 12h2M12 12h8M4 18h10M20 18h0"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>',camera:'<path d="M3 8h4l2-3h6l2 3h4v11H3z"/><circle cx="12" cy="13" r="3.5"/>',profiles:'<rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M7 18c1-3 9-3 10 0"/>'};
+const LENS={"Canon EF 24-70 f/2.8L":[.35,.35,.2],"Canon RF 50mm f/1.8":[.08,.3,.1],"Canon 70-200 f/2.8L":[-.05,.25,.1],"Nikon Z 24-70 f/2.8 S":[.3,.3,.15],"Nikon AF-S 50mm f/1.8":[.06,.35,.1],"Sony FE 24-70 f/2.8 GM":[.28,.25,.1],"Sony FE 35mm f/1.8":[.1,.3,.1],"Fujifilm XF 18-55":[.3,.3,.15],"Sigma 35mm f/1.4 Art":[.08,.45,.1],"Tamron 28-75 f/2.8":[.25,.35,.2],"Zeiss Otus 55mm":[.03,.25,.03]};
+const PHONE={"iPhone Main 26mm":[.1,.15,.05],"iPhone Ultra-wide 13mm":[.6,.35,.2],"iPhone Tele 3x":[-.05,.1,.03],"Galaxy Main":[.12,.15,.05],"Galaxy Ultra-wide":[.55,.3,.2],"Galaxy Tele":[-.05,.1,.03],"Pixel Main":[.1,.12,.05],"Pixel Ultra-wide":[.5,.3,.18],"Xiaomi Main":[.12,.18,.06],"Xiaomi Ultra-wide":[.55,.32,.2],"Selfie camera":[.35,.2,.1]};
+const lensItems=D=>Object.keys(D).map(n=>({l:n,a:()=>{[V.dist,V.lvig,V.ca]=D[n];queue();toast(n+": typical correction applied");}}));
+const AUTO={"Auto Natural":{},"Auto Vivid":{vibrance:.25,saturation:.1,contrast:.1,clarity:.1},"Auto Portrait":{clarity:-.15,texAmt:-.15,shadows:.1,sharpen:-.1,nrl:.1},"Auto Landscape":{dehaze:.2,clarity:.2,vibrance:.25,contrast:.1,texAmt:.15},"Auto Low light":{exposure:.2,shadows:.2,nrl:.35,nrc:.3},"Auto Food":{temp:.1,vibrance:.3,saturation:.1,texAmt:.2,contrast:.1},"Auto HDR":{highlights:-.3,shadows:.35,whites:.2,blacks:-.1,clarity:.25,texAmt:.2},"Auto B&W":{saturation:-1,contrast:.3,clarity:.25},"Auto Cinematic":{contrast:.15,saturation:-.1,gsH:.55,gsS:.2,ghH:.09,ghS:.2,vignette:.25}};
+const PROF={Portrait:{clarity:-.15,texAmt:-.12,shadows:.12,vibrance:-.05,nrl:.1,sharpen:.15,gsH:.52,gsS:.1,ghH:.08,ghS:.12},Landscape:{dehaze:.25,clarity:.25,vibrance:.3,contrast:.1,texAmt:.2,sharpen:.4},Night:{exposure:.25,shadows:.3,highlights:-.2,nrl:.45,nrc:.4,vibrance:.15,clarity:.1},Food:{temp:.12,vibrance:.3,saturation:.1,texAmt:.25,contrast:.12,sharpen:.35},Sunset:{temp:.35,vibrance:.35,highlights:-.25,shadows:.2,dehaze:.1,ghH:.08,ghS:.25},Street:{contrast:.2,clarity:.25,texAmt:.2,saturation:-.1,vignette:.2,grain:.15},Architecture:{clarity:.2,texAmt:.2,sharpen:.45,contrast:.1,dehaze:.1,temp:-.05},Pet:{texAmt:.3,clarity:.15,sharpen:.4,vibrance:.15,shadows:.15},Macro:{texAmt:.35,sharpen:.5,clarity:.2,vibrance:.25,contrast:.1},Document:{saturation:-1,contrast:.5,whites:.5,blacks:-.3,sharpen:.6,exposure:.2}};
+const WBI=[{l:"Auto WB",a:()=>wbAuto("gray")},{l:"Auto WB (white)",a:()=>wbAuto("white")},{l:"Auto WB (smart)",a:()=>wbAuto("smart")},{l:"Daylight",a:()=>wbSet(0,0)},{l:"Cloudy",a:()=>wbSet(.25,.05)},{l:"Shade",a:()=>wbSet(.4,.08)},{l:"Tungsten",a:()=>wbSet(-.6,.05)},{l:"Fluorescent",a:()=>wbSet(-.15,.3)},{l:"Flash",a:()=>wbSet(.12,0)}];
+const gi=r=>pp([r+"H",r+"S",r+"L",...(r=="gg"?[]:[r+"B",r+"K"])]);
 const TOOLS=[
-["auto","Auto",()=>[{l:"AI Enhance",a:()=>aiRun()},{l:"Auto balance",a:()=>aiRun(BAL)},{l:"Auto grade",a:()=>aiRun(GRD)},{p:"ai"}]],
-["light","Light",()=>pp(L7)],["color","Color",()=>pp(["temp","tint","vibrance","saturation"])],
-["mixer","Mixer",()=>pp(["hsl0","hsl1","hsl2"])],["grade","Grading",()=>pp(["gsH","gsS","gmH","gmS","ghH","ghS"])],
-["fx","Effects",()=>pp(["vignette","grain"])],["detail","Detail",()=>pp(["texAmt","clarity","dehaze"])],
-["sharp","Sharpen",()=>pp(["sharpen","sradius","smask","nrl","nrc"])],
-["blur","Blur",()=>[{l:"Off",a:()=>setMode(0),on:()=>bmode==0},{l:"Portrait",a:()=>setMode(1),on:()=>bmode==1},{l:"Auto",a:()=>setMode(2),on:()=>bmode==2},{p:"bamt"},{p:"bfocus"},{p:"bfeather"}]],
-["crop","Crop",()=>[...pp(["ang","cl","cr","ct","cb"]),{l:"Auto level",a:autoLevel},{l:"Rotate",a:()=>{crop.r=(crop.r+1)%4;layout();}},{l:"Flip",a:()=>{crop.flip=!crop.flip;layout();},on:()=>crop.flip},
+["auto","Auto",[["","",()=>[{l:"AI Enhance",a:()=>aiRun()},{l:"AI Pro (online)",a:aiOnline},{l:"Auto balance",a:()=>aiRun(BAL)},{l:"Auto grade",a:()=>aiRun(GRD)},{p:"ai"}]]]],
+["light","Light",[["","",()=>pp(L7)]]],
+["color","Color",[["basic","Basic",()=>[...pp(["temp","tint","vibrance","saturation"]),...WBI]],["hsl","HSL",()=>pp(["hsl0","hsl1","hsl2"])],["gs","Shadows",()=>gi("gs")],["gm","Midtones",()=>gi("gm")],["gh","Highlights",()=>gi("gh")],["gg","Global",()=>gi("gg")]]],
+["fx","Effects",[["","",()=>pp(["vignette","grain"])]]],
+["detail","Detail",[["","",()=>pp(["texAmt","clarity","dehaze"])]]],
+["sharp","Sharpen",[["","",()=>pp(["sharpen","sradius","smask","nrl","nrc"])]]],
+["blur","Blur",[["","",()=>[{l:"Off",a:()=>setMode(0),on:()=>bmode==0},{l:"Portrait",a:()=>setMode(1),on:()=>bmode==1},{l:"Auto",a:()=>{autoMask();setMode(2);},on:()=>bmode==2},{l:"AI subject (online)",a:aiSubject},{p:"bamt"},{p:"bfocus"},{p:"bfeather"}]]]],
+["optics","Optics",[["man","Manual",()=>pp(["dist","lvig","ca"])],["cam","Camera lenses",()=>lensItems(LENS)],["ph","Phone lenses",()=>lensItems(PHONE)]]],
+["crop","Crop",[["","",()=>[...pp(["ang","cl","cr","ct","cb"]),{l:"Auto level",a:autoLevel},{l:"Rotate",a:()=>{crop.r=(crop.r+1)%4;layout();}},{l:"Flip",a:()=>{crop.flip=!crop.flip;layout();},on:()=>crop.flip},
  {l:crop.land?"Landscape":"Portrait",a:()=>{crop.land=!crop.land;ratioAB[0]?setRatio(...ratioAB):layout();}},
- ...RT.map(([n,a,b])=>({l:!a?n:(crop.land||a==b?a+":"+b:b+":"+a),a:()=>{ratioSel=n;ratioAB=[a,b];setRatio(a,b);},on:()=>ratioSel==n})),{l:"Reset crop",a:resetCrop}]],
-["presets","Presets",()=>[...Object.keys(P).map(k=>({l:k,a:()=>apply(P[k])})),{l:"Save current",a:savePreset},{l:"Reset all",a:()=>{apply();setMode(0);}}]],
-["camera","Camera",null]];
-function renderChips(){const box=$("chips");box.innerHTML="";items=TOOLS.find(t=>t[0]==tool)[2]();
+ ...RT.map(([n,a,b])=>({l:!a?n:(crop.land||a==b?a+":"+b:b+":"+a),a:()=>{ratioSel=n;ratioAB=[a,b];setRatio(a,b);},on:()=>ratioSel==n})),{l:"Reset crop",a:resetCrop}]]]],
+["presets","Presets",[["looks","Looks",()=>[...Object.keys(P).map(k=>({l:k,a:()=>apply(P[k])})),{l:"Save current",a:savePreset},{l:"Reset all",a:()=>{apply();setMode(0);}}]],["auto","Auto looks",()=>Object.keys(AUTO).map(k=>({l:k,a:()=>autoLook(AUTO[k])}))]]],
+["camera","Camera",null],
+["profiles","Profiles",[["","",()=>[{l:"Auto detect",a:autoProfile},...Object.keys(PROF).map(k=>({l:k,a:()=>autoLook(PROF[k])}))]]]]];
+function curSub(){const T=TOOLS.find(t=>t[0]==tool);return T[2].find(s=>s[0]==subSel[tool])||T[2][0];}
+function renderChips(){const T=TOOLS.find(t=>t[0]==tool),sb=$("sub"),cs=curSub();sb.innerHTML="";sb.classList.toggle("hide",T[2].length<2);
+ if(T[2].length>1)T[2].forEach(s=>{const b=document.createElement("button");b.textContent=s[1];b.className=s===cs?"on":"";b.onclick=()=>{subSel[tool]=s[0];setTool(tool);};sb.appendChild(b);});
+ const box=$("chips");box.innerHTML="";items=cs[2]();
  items.forEach(it=>{const b=document.createElement("button");b.textContent=it.l||PR[it.p].label;
-  b.onclick=()=>{if(it.p)cur=it.p;else{it.a();renderChips();}refresh();};box.appendChild(b);});}
+  b.onclick=()=>{if(it.p)cur=it.p;else{it.a();renderChips();}refresh();};box.appendChild(b);});
+ $("mix").classList.toggle("hide",!(tool=="color"&&cs[0]=="hsl"));}
 function setTool(id){tool=id;renderChips();const f=items.find(i=>i.p);cur=f?f.p:null;
- $("mix").classList.toggle("hide",id!="mixer");[...$("tools").children].forEach(b=>b.classList.toggle("on",b.dataset.t==id));refresh();}
+ [...$("tools").children].forEach(b=>b.classList.toggle("on",b.dataset.t==id));refresh();}
 TOOLS.forEach(t=>{const b=document.createElement("button");b.dataset.t=t[0];b.innerHTML=svg(IC[t[0]])+t[1];b.onclick=()=>t[2]?setTool(t[0]):startCam();$("tools").appendChild(b);});
 COL.forEach((c,i)=>{const b=document.createElement("button");b.style.background=c[1];b.onclick=()=>{selC=i;[...$("mix").children].forEach((x,k)=>x.classList.toggle("on",k==i));refresh();};$("mix").appendChild(b);});
 $("mix").children[0].classList.add("on");
@@ -226,16 +255,54 @@ function autoLevel(){if(!loaded)return;const n=256,k=Math.min(1,n/Math.max(W,H))
  let best=30,bv=-1;for(let i=1;i<60;i++){const v=bins[i-1]+bins[i]*2+bins[i+1];if(v>bv){bv=v;best=i;}}
  const dl=best/2-15;crop.ang=Math.round((crop.flip?-dl:dl)*10)/10;layout();}
 /* ---- AI enhance ---- */
-function analyze(){const n=96,c=document.createElement("canvas");c.width=c.height=n;const x=c.getContext("2d");x.drawImage(srcCv,0,0,n,n);const d=x.getImageData(0,0,n,n).data;
- let r=0,g=0,b=0,ss=0;const hist=new Float32Array(256),N=n*n;
- for(let i=0;i<d.length;i+=4){r+=d[i];g+=d[i+1];b+=d[i+2];ss+=Math.max(d[i],d[i+1],d[i+2])-Math.min(d[i],d[i+1],d[i+2]);hist[Math.round(d[i]*.2126+d[i+1]*.7152+d[i+2]*.0722)]++;}
- r/=N*255;g/=N*255;b/=N*255;ss/=N*255;const m=.2126*r+.7152*g+.0722*b;
- const pc=p=>{let a=0;for(let i=0;i<256;i++){a+=hist[i];if(a>=N*p)return i/255;}return 1;};
- const p1=pc(.01),p5=pc(.05),p95=pc(.95),p99=pc(.99),cl=(v,a,e)=>Math.max(a,Math.min(e,v));
- return{exposure:cl(Math.log2(.45/Math.max(m,.03)),-1.3,1.3)*.8,shadows:cl((.12-p5)*4,0,.7),highlights:-cl((p95-.9)*8,0,.6),blacks:cl(-(p1-.02)*4,-.6,0),whites:cl((.96-p99)*3,0,.6),contrast:p95-p5<.6?.15:.05,
-  temp:cl((b-r)/.2,-1,1)*.6,tint:cl((g-(r+b)/2)/.08,-1,1)*.4,vibrance:ss<.25?.3:.15,texAmt:.15,clarity:.15,dehaze:p95-p5<.5?.2:.05,sharpen:.3,smask:.3,nrl:m<.25?.3:.1,nrc:m<.25?.3:.15,gsH:.52,gsS:.15,ghH:.09,ghS:.12};}
+function stats(){if(ST&&ST.src===srcCv)return ST;const n=96,c=document.createElement("canvas");c.width=c.height=n;const x=c.getContext("2d");x.drawImage(srcCv,0,0,n,n);const d=x.getImageData(0,0,n,n).data,N=n*n,hist=new Float32Array(256);
+ let r=0,g=0,b=0,ss=0,sk=0,gr=0,bl=0,wm=0;
+ for(let i=0;i<d.length;i+=4){const R=d[i],G=d[i+1],B=d[i+2];r+=R;g+=G;b+=B;ss+=Math.max(R,G,B)-Math.min(R,G,B);hist[Math.round(R*.2126+G*.7152+B*.0722)]++;
+  if(R>95&&G>40&&B>20&&R>G&&R>B&&R-Math.min(G,B)>15&&Math.abs(R-G)>15)sk++;if(G>R&&G>B)gr++;if(B>R&&B>G)bl++;if(R>G&&G>B)wm++;}
+ const pc=p=>{let a=0;for(let i=0;i<256;i++){a+=hist[i];if(a>=N*p)return i/255;}return 1;},p99=pc(.99);
+ let wr=0,wg=0,wb=0,k=0;for(let i=0;i<d.length;i+=4)if((d[i]*.2126+d[i+1]*.7152+d[i+2]*.0722)/255>=p99){wr+=d[i];wg+=d[i+1];wb+=d[i+2];k++;}k=k||1;
+ return ST={src:srcCv,r:r/N/255,g:g/N/255,b:b/N/255,ss:ss/N/255,m:(r*.2126+g*.7152+b*.0722)/N/255,p1:pc(.01),p5:pc(.05),p95:pc(.95),p99,wr:wr/k/255,wg:wg/k/255,wb:wb/k/255,skin:sk/N,grn:gr/N,blu:bl/N,warm:wm/N};}
+function analyze(){const s=stats(),cl=(v,a,e)=>Math.max(a,Math.min(e,v));
+ return{exposure:cl(Math.log2(.45/Math.max(s.m,.03)),-1.3,1.3)*.8,shadows:cl((.12-s.p5)*4,0,.7),highlights:-cl((s.p95-.9)*8,0,.6),blacks:cl(-(s.p1-.02)*4,-.6,0),whites:cl((.96-s.p99)*3,0,.6),contrast:s.p95-s.p5<.6?.15:.05,
+  temp:cl((s.b-s.r)/.2,-1,1)*.6,tint:cl((s.g-(s.r+s.b)/2)/.08,-1,1)*.4,vibrance:s.ss<.25?.3:.15,texAmt:.15,clarity:.15,dehaze:s.p95-s.p5<.5?.2:.05,sharpen:.3,smask:.3,nrl:s.m<.25?.3:.1,nrc:s.m<.25?.3:.15,gsH:.52,gsS:.15,ghH:.09,ghS:.12};}
+function detectScene(){const s=stats();if(s.m<.2)return"Night";if(s.skin>.15)return"Portrait";if(s.grn+s.blu>.45&&s.ss>.15)return"Landscape";if(s.warm>.4&&s.ss>.3)return"Food";return"Street";}
 function applyAI(){for(const k in aiTarget){const d=PR[k].def;V[k]=d+(aiTarget[k]-d)*aiS;}queue();refresh();}
-function aiRun(keys){if(!loaded)return;const o=analyze();aiTarget={};(keys||Object.keys(o)).forEach(k=>aiTarget[k]=o[k]);aiS=1;applyAI();}
+function setTarget(o){aiTarget={};for(const k in o)if(PR[k])aiTarget[k]=Math.max(PR[k].min,Math.min(PR[k].max,o[k]));aiS=1;applyAI();}
+function mixStyle(o,st,w){for(const k in st)o[k]=/H$/.test(k)?st[k]:(o[k]||0)+st[k]*w;return o;}
+function aiRun(keys){if(!loaded)return;let o=analyze();if(!keys)mixStyle(o,PROF[detectScene()],.6);
+ if(keys){const q={};keys.forEach(k=>q[k]=o[k]);o=q;}setTarget(o);}
+function autoLook(st){if(!loaded)return;apply();setTarget(mixStyle(analyze(),st,1));}
+function autoProfile(){if(!loaded)return;const s=detectScene();toast("Detected scene: "+s);autoLook(PROF[s]);}
+function wbSet(t,n){V.temp=t;V.tint=n;queue();refresh();}
+function wbAuto(m){if(!loaded)return;const s=stats(),cl=v=>Math.max(-1,Math.min(1,v));
+ const g1=[(s.b-s.r)/.2,(s.g-(s.r+s.b)/2)/.08],w1=[(s.wb-s.wr)/.2,(s.wg-(s.wr+s.wb)/2)/.08];
+ const t=m=="gray"?g1:m=="white"?w1:[(g1[0]+w1[0])/2,(g1[1]+w1[1])/2];V.temp=cl(t[0]*.8);V.tint=cl(t[1]*.8);queue();refresh();}
+/* ---- online AI (Gemini, uses mobile data) ---- */
+const KEY=()=>localStorage.getItem("lc_key")||"",MODEL=()=>localStorage.getItem("lc_model")||"gemini-flash-latest";
+function toast(m,ms){const t=$("toast");t.textContent=m;t.classList.remove("hide");clearTimeout(toast.t);if(ms!==0)toast.t=setTimeout(()=>t.classList.add("hide"),ms||2800);}
+function setupKey(){const k=prompt("Paste your free Gemini API key (aistudio.google.com/apikey)",KEY());if(k===null)return;localStorage.setItem("lc_key",k.trim());const m=prompt("Gemini model name",MODEL());if(m)localStorage.setItem("lc_model",m.trim());}
+$("gear").onclick=setupKey;
+function smallB64(n){const k=Math.min(1,n/Math.max(W,H)),c=document.createElement("canvas");c.width=Math.round(W*k);c.height=Math.round(H*k);c.getContext("2d").drawImage(srcCv,0,0,c.width,c.height);return c.toDataURL("image/jpeg",.85).split(",")[1];}
+async function gem(text,json){if(!KEY()){setupKey();if(!KEY())throw new Error("API key needed");}
+ const body={contents:[{parts:[{text},{inline_data:{mime_type:"image/jpeg",data:smallB64(1024)}}]}]};if(json)body.generationConfig={responseMimeType:"application/json"};
+ const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+MODEL()+":generateContent?key="+KEY(),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+ const j=await r.json();if(!r.ok)throw new Error(j.error&&j.error.message||("HTTP "+r.status));
+ return JSON.parse(j.candidates[0].content.parts.map(p=>p.text||"").join("").replace(/```json|```/g,"").trim());}
+async function aiOnline(){if(!loaded)return;toast("AI is analyzing your photo...",0);
+ try{const j=await gem(`You are an expert photo retoucher. Analyze this photo and return ONLY a JSON object: {"scene":"portrait|landscape|night|food|sunset|street|architecture|pet|macro|document|other","edit":{"exposure":number -1.5..1.5,"contrast":-0.5..1,"highlights":-1..0,"shadows":0..1,"whites":-0.5..1,"blacks":-1..0.5,"temp":-1..1 (positive is warmer),"tint":-1..1,"vibrance":0..1,"saturation":-0.5..0.5,"texAmt":-0.5..1,"clarity":-0.5..1,"dehaze":-0.3..1,"sharpen":0..1,"nrl":0..1,"nrc":0..1,"vignette":0..1,"gsH":0..1,"gsS":0..0.4,"ghH":0..1,"ghS":0..0.4}}. Make a natural, professional, balanced edit for this exact photo.`,true);
+  const o=analyze();for(const k in j.edit)if(PR[k]&&isFinite(+j.edit[k]))o[k]=+j.edit[k];setTarget(o);toast("AI enhanced ("+(j.scene||"photo")+")");}
+ catch(e){toast("AI error: "+e.message,6000);}}
+function uploadMask(out,n){gl.activeTexture(gl.TEXTURE1);gl.texImage2D(gl.TEXTURE_2D,0,gl.LUMINANCE,n,n,0,gl.LUMINANCE,gl.UNSIGNED_BYTE,out);gl.activeTexture(gl.TEXTURE0);queue();}
+async function aiSubject(){if(!loaded)return;toast("AI is finding the subject...",0);
+ try{const j=await gem('Give the segmentation mask for the main subject (the person, animal or object that should stay in focus). Output a JSON list of segmentation masks where each entry contains the 2D bounding box in the key "box_2d" as [y0,x0,y1,x1] normalized to 0-1000, the segmentation mask in key "mask", and a text label in the key "label".',false);
+  const it=Array.isArray(j)?j[0]:j,n=256,c=document.createElement("canvas");c.width=c.height=n;const x=c.getContext("2d");x.fillStyle="#000";x.fillRect(0,0,n,n);
+  const[y0,x0,y1,x1]=it.box_2d.map(v=>v/1000*n);let img=null;
+  if(it.mask){img=new Image();try{await new Promise((ok,no)=>{img.onload=ok;img.onerror=no;img.src=it.mask.startsWith("data:")?it.mask:"data:image/png;base64,"+it.mask;});}catch(e){img=null;}}
+  if(img&&img.width){x.filter="blur(2px)";x.drawImage(img,x0,y0,x1-x0,y1-y0);x.filter="none";}
+  else{x.fillStyle="#fff";x.filter="blur(8px)";x.beginPath();x.ellipse((x0+x1)/2,(y0+y1)/2,(x1-x0)/2,(y1-y0)/2,0,0,7);x.fill();x.filter="none";}
+  const d=x.getImageData(0,0,n,n).data,out=new Uint8Array(n*n);for(let i=0;i<n*n;i++)out[i]=d[i*4];
+  uploadMask(out,n);setMode(2);refresh();toast("Subject found: "+(it.label||"subject"));}
+ catch(e){toast("AI error: "+e.message,6000);}}
 /* ---- presets ---- */
 function apply(o){S.forEach(s=>{V[s[0]]=o&&o[s[0]]!==undefined?o[s[0]]:s[4];});HS.forEach(a=>a.fill(0));queue();refresh();}
 function savePreset(){const n=prompt("Preset name");if(!n)return;P[n]={...V};
@@ -244,15 +311,23 @@ const cmp=$("cmp");
 ["touchstart","mousedown"].forEach(e=>cmp.addEventListener(e,ev=>{ev.preventDefault();bypass=1;queue();}));
 ["touchend","mouseup","mouseleave","touchcancel"].forEach(e=>cmp.addEventListener(e,()=>{bypass=0;queue();}));
 /* ---- camera ---- */
-let stream,track,face="environment",flash=0,aiCap=true;
+let stream,track,face="environment",flash=0,aiCap=true,zoom=1,zmin=1,zmax=5,hwZoom=false,ev=0,hwEv=false,vmode=0,caps={};
+const VM=["Shutter","Zoom","Exposure"],clp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const torch=on=>{if(track)track.applyConstraints({advanced:[{torch:on}]}).catch(()=>{});};
+function applyZoom(z){zoom=clp(z,zmin,zmax);$("zl").textContent=zoom.toFixed(1)+"x";if(hwZoom)track.applyConstraints({advanced:[{zoom}]}).catch(()=>{});else $("vid").style.transform="scale("+zoom+")";}
+function applyEv(e){const c=caps.exposureCompensation;ev=hwEv?clp(e,c.min,c.max):clp(e,-3,3);$("evl").textContent="EV "+(ev>=0?"+":"")+ev.toFixed(1);
+ if(hwEv)track.applyConstraints({advanced:[{exposureCompensation:ev}]}).catch(()=>{});else $("vid").style.filter="brightness("+Math.pow(2,ev)+")";}
 async function startCam(){stopCam();
  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:face,width:{ideal:4096},height:{ideal:3072}},audio:false});}
  catch(e){alert("Camera not available: "+e.message);return;}
- flash=0;$("fl").textContent="Flash off";$("cam").classList.remove("hide");$("vid").srcObject=stream;track=stream.getVideoTracks()[0];camCtl();}
-function stopCam(){if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;}
-function camCtl(){const host=$("camctl");host.innerHTML="";const caps=track.getCapabilities?track.getCapabilities():{},st=track.getSettings?track.getSettings():{};let any=false;
- [["iso","ISO"],["exposureTime","Shutter"],["exposureCompensation","Exposure"],["colorTemperature","White bal."],["focusDistance","Focus"],["zoom","Zoom"]].forEach(([k,l])=>{
+ $("cam").classList.remove("hide");$("vid").srcObject=stream;track=stream.getVideoTracks()[0];caps=track.getCapabilities?track.getCapabilities():{};
+ hwZoom=!!(caps.zoom&&caps.zoom.max>caps.zoom.min);zmin=hwZoom?caps.zoom.min:1;zmax=hwZoom?Math.min(caps.zoom.max,12):5;
+ hwEv=!!(caps.exposureCompensation&&caps.exposureCompensation.max>caps.exposureCompensation.min);
+ $("vid").style.transform="";$("vid").style.filter="";flash=0;$("fl").textContent="Flash off";
+ applyZoom(zmin);applyEv(0);camCtl();if(window.LCNative)LCNative.cam(true);}
+function stopCam(){if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;if(window.LCNative)LCNative.cam(false);}
+function camCtl(){const host=$("camctl");host.innerHTML="";const st=track.getSettings?track.getSettings():{};let any=false;
+ [["iso","ISO"],["exposureTime","Shutter"],["colorTemperature","White bal."],["focusDistance","Focus"]].forEach(([k,l])=>{
   const c=caps[k];if(!c||c.min===undefined)return;any=true;const v0=st[k]!==undefined?st[k]:c.min;
   const r=document.createElement("div");r.className="crow";
   r.innerHTML=`<span>${l}</span><input type="range" min="${c.min}" max="${c.max}" step="${c.step||(c.max-c.min)/100}" value="${v0}"><span>${(+v0).toFixed(1)}</span>`;
@@ -262,17 +337,28 @@ function camCtl(){const host=$("camctl");host.innerHTML="";const caps=track.getC
    try{await track.applyConstraints({advanced:[a]});}catch(e){}};host.appendChild(r);});
  if(!any)host.innerHTML="<div style='color:var(--dim);font-size:13px;padding:6px 0'>This phone does not share manual ISO/shutter controls with apps.</div>";
  const b=document.createElement("button");b.textContent="Back to auto";b.onclick=()=>{track.applyConstraints({advanced:[{exposureMode:"continuous",whiteBalanceMode:"continuous",focusMode:"continuous"}]}).catch(()=>{});camCtl();};host.appendChild(b);}
-$("fl").onclick=()=>{const caps=track&&track.getCapabilities?track.getCapabilities():{};if(!caps.torch){alert("Flash is not available on this camera (front camera or unsupported phone).");return;}
+$("fl").onclick=()=>{if(!caps.torch){alert("Flash is not available on this camera (front camera or unsupported phone).");return;}
  flash=(flash+1)%3;$("fl").textContent=["Flash off","Flash on","Flash auto"][flash];torch(flash==1);};
 $("aitog").onclick=()=>{aiCap=!aiCap;$("aitog").classList.toggle("on",aiCap);};
 $("pro").onclick=()=>$("camctl").classList.toggle("hide");
 $("cf").onclick=()=>{face=face=="environment"?"user":"environment";startCam();};
 $("cx").onclick=()=>{stopCam();$("cam").classList.add("hide");};
+$("zp").onclick=()=>applyZoom(zoom*1.15);$("zm").onclick=()=>applyZoom(zoom/1.15);
+$("evp").onclick=()=>applyEv(ev+.3);$("evm").onclick=()=>applyEv(ev-.3);
+$("vm").onclick=()=>{vmode=(vmode+1)%3;$("vm").textContent="Vol: "+VM[vmode];};
+window.lcVol=(d,rc)=>{if(!stream)return;const up=d=="up";if(vmode==0){if(!rc)$("shot").click();}else if(vmode==1)applyZoom(up?zoom*1.1:zoom/1.1);else applyEv(ev+(up?.3:-.3));};
+document.addEventListener("keydown",e=>{if(e.key=="AudioVolumeUp")lcVol("up",0);if(e.key=="AudioVolumeDown")lcVol("down",0);});
+let pd=0,pz=1;const vw=$("vw"),dist2=e=>Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+vw.addEventListener("touchstart",e=>{if(e.touches.length==2){pd=dist2(e);pz=zoom;}},{passive:true});
+vw.addEventListener("touchmove",e=>{if(e.touches.length==2&&pd)applyZoom(pz*dist2(e)/pd);},{passive:true});
+vw.addEventListener("touchend",()=>pd=0);
 $("shot").onclick=async()=>{const v=$("vid");if(!v.videoWidth)return;let lit=false;
  if(flash==2){const t=document.createElement("canvas");t.width=t.height=16;const x=t.getContext("2d");x.drawImage(v,0,0,16,16);const d=x.getImageData(0,0,16,16).data;let s=0;for(let i=0;i<d.length;i+=4)s+=d[i]*.3+d[i+1]*.59+d[i+2]*.11;
   if(s/256<70){lit=true;torch(true);await new Promise(r=>setTimeout(r,450));}}
- const c=document.createElement("canvas");c.width=v.videoWidth;c.height=v.videoHeight;c.getContext("2d").drawImage(v,0,0);
- if(lit)torch(false);stopCam();$("cam").classList.add("hide");loadSource(c,c.width,c.height);if(aiCap)aiRun();};
+ const c=document.createElement("canvas"),dz=hwZoom?1:zoom,sw=v.videoWidth/dz,sh=v.videoHeight/dz;c.width=Math.round(sw);c.height=Math.round(sh);
+ c.getContext("2d").drawImage(v,(v.videoWidth-sw)/2,(v.videoHeight-sh)/2,sw,sh,0,0,c.width,c.height);
+ const e0=ev,soft=!hwEv;if(lit)torch(false);stopCam();$("cam").classList.add("hide");loadSource(c,c.width,c.height);
+ if(aiCap)aiRun();else if(soft&&e0){V.exposure=clp(e0,-2,2);queue();refresh();}};
 /* ---- load / mask / export ---- */
 function autoMask(){const n=96,c=document.createElement("canvas");c.width=c.height=n;const x=c.getContext("2d");x.drawImage(srcCv,0,0,n,n);const d=x.getImageData(0,0,n,n).data;
  let r=0,g=0,b=0,k=0;for(let i=0;i<n;i++)for(const j of[0,1,n-2,n-1])for(const[a,e]of[[i,j],[j,i]]){const p=(e*n+a)*4;r+=d[p];g+=d[p+1];b+=d[p+2];k++;}
@@ -280,14 +366,22 @@ function autoMask(){const n=96,c=document.createElement("canvas");c.width=c.heig
  for(let y=0;y<n;y++)for(let i=0;i<n;i++){const p=(y*n+i)*4,cx=i/n-.5,cy=y/n-.5,v=Math.hypot(d[p]-r,d[p+1]-g,d[p+2]-b)*Math.exp(-(cx*cx+cy*cy)/.18);m[y*n+i]=v;mx=Math.max(mx,v);}
  for(let pass=0;pass<4;pass++){const o=new Float32Array(n*n);for(let y=0;y<n;y++)for(let i=0;i<n;i++){let s=0,q=0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const yy=y+dy,xx=i+dx;if(yy<0||xx<0||yy>=n||xx>=n)continue;s+=m[yy*n+xx];q++;}o[y*n+i]=s/q;}m=o;}
  const out=new Uint8Array(n*n);for(let i=0;i<n*n;i++){const t=Math.max(0,Math.min(1,(m[i]/mx-.2)/.35));out[i]=Math.round(t*t*(3-2*t)*255);}
- gl.activeTexture(gl.TEXTURE1);gl.texImage2D(gl.TEXTURE_2D,0,gl.LUMINANCE,n,n,0,gl.LUMINANCE,gl.UNSIGNED_BYTE,out);gl.activeTexture(gl.TEXTURE0);}
+ uploadMask(out,n);}
 function loadSource(src,w0,h0){const k=Math.min(1,3000/Math.max(w0,h0));W=Math.round(w0*k);H=Math.round(h0*k);
  srcCv=document.createElement("canvas");srcCv.width=W;srcCv.height=H;srcCv.getContext("2d").drawImage(src,0,0,W,H);
  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tex);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,srcCv);
  autoMask();loaded=true;$("home").classList.add("hide");cv.hidden=false;["sheet","save","cmp"].forEach(i=>$(i).classList.remove("hide"));
  resetCrop();bmode=0;apply();setTool("light");}
-const file=$("file");$("open").onclick=$("open2").onclick=()=>file.click();$("cam2").onclick=startCam;
-file.onchange=()=>{const f=file.files[0];if(!f)return;const img=new Image();img.onload=()=>{loadSource(img,img.width,img.height);URL.revokeObjectURL(img.src);};img.src=URL.createObjectURL(f);file.value="";};
+const file=$("file");
+function loadFile(f){if(!f)return;toast("Opening photo...",0);
+ const done=img=>{try{loadSource(img,img.naturalWidth||img.width,img.naturalHeight||img.height);$("toast").classList.add("hide");}catch(e){toast("Could not open photo: "+e.message,6000);}};
+ const img=new Image();img.onload=()=>done(img);
+ img.onerror=()=>{const fr=new FileReader();fr.onload=()=>{const i2=new Image();i2.onload=()=>done(i2);i2.onerror=()=>toast("This photo format can't be opened. Try JPG or PNG.",6000);i2.src=fr.result;};fr.onerror=()=>toast("Could not read the photo.",6000);fr.readAsDataURL(f);};
+ img.src=URL.createObjectURL(f);}
+file.addEventListener("click",()=>{file.value="";});
+file.addEventListener("change",()=>loadFile(file.files[0]));
+$("cam2").onclick=startCam;
+window.onerror=(m,s,l)=>toast("Error: "+m+" (line "+l+")",6000);
 $("save").onclick=()=>{draw();cv.toBlob(async b=>{const f=new File([b],"lightcraft.jpg",{type:"image/jpeg"});
  try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});return;}}catch(e){}
  const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="lightcraft.jpg";a.click();},"image/jpeg",.95);};
