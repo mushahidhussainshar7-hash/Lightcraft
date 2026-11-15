@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LightCraft</title>
+<style>
+:root{--bg:#161514;--panel:#211f1e;--line:#35312e;--txt:#e8e2d6;--dim:#8f877b;--amber:#d9a441}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font-family:system-ui,sans-serif;overflow:hidden}
+#app{display:flex;flex-direction:column;height:100%;padding-top:env(safe-area-inset-top,0)}
+header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--line)}
+h1{font-size:18px;margin:0;font-weight:600;letter-spacing:.5px}
+button{font:inherit;color:var(--txt);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 12px}
+button.main{background:var(--amber);color:#1a1405;border-color:var(--amber);font-weight:600}
+#stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:8px}
+canvas{max-width:100%;max-height:100%;object-fit:contain}
+#empty{color:var(--dim);text-align:center;padding:20px}
+#panel{background:var(--panel);border-top:1px solid var(--line);height:42%;overflow-y:auto;padding:8px 14px calc(12px + env(safe-area-inset-bottom,0))}
+.bar{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px}
+.bar button{white-space:nowrap;flex:none}
+.row{display:grid;grid-template-columns:92px 1fr 40px;align-items:center;gap:8px;margin:6px 0;font-size:14px}
+.row span:last-child{color:var(--dim);text-align:right;font-size:12px}
+input[type=range]{width:100%;accent-color:var(--amber)}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>LightCraft</h1>
+    <div style="display:flex;gap:8px">
+      <button id="open">Open photo</button>
+      <button id="save" class="main">Export</button>
+    </div>
+  </header>
+  <div id="stage"><div id="empty">Open a photo to start editing</div><canvas id="cv" hidden></canvas></div>
+  <div id="panel">
+    <div class="bar">
+      <button id="cmp">Hold to compare</button>
+      <button id="reset">Reset</button>
+      <button data-p="warm">Warm</button>
+      <button data-p="cool">Cool</button>
+      <button data-p="film">Film</button>
+      <button data-p="punch">Punch</button>
+      <button data-p="mono">Mono</button>
+    </div>
+    <div id="sliders"></div>
+  </div>
+</div>
+<input type="file" id="file" accept="image/*" hidden>
+<script>
+const S=[
+["exposure","Exposure",-2,2,0],["contrast","Contrast",-1,1,0],["highlights","Highlights",-1,1,0],
+["shadows","Shadows",-1,1,0],["whites","Whites",-1,1,0],["blacks","Blacks",-1,1,0],
+["temp","Temperature",-1,1,0],["tint","Tint",-1,1,0],["vibrance","Vibrance",-1,1,0],
+["saturation","Saturation",-1,1,0],["vignette","Vignette",0,1,0],["grain","Grain",0,1,0]];
+const P={
+warm:{temp:.35,vibrance:.2,contrast:.1},cool:{temp:-.35,tint:.05,contrast:.1},
+film:{contrast:.2,blacks:.3,saturation:-.15,grain:.4,vignette:.3,temp:.1},
+punch:{contrast:.3,vibrance:.4,saturation:.15,shadows:.2},mono:{saturation:-1,contrast:.25,grain:.2}};
+const V={};S.forEach(s=>V[s[0]]=s[4]);
+const cv=document.getElementById("cv"),empty=document.getElementById("empty");
+const gl=cv.getContext("webgl",{preserveDrawingBuffer:true,antialias:false});
+const vs="attribute vec2 p;varying vec2 uv;void main(){uv=p*.5+.5;gl_Position=vec4(p,0.,1.);}";
+const fs=`precision highp float;varying vec2 uv;uniform sampler2D t;uniform vec2 px;uniform float bypass;
+uniform float exposure,contrast,highlights,shadows,whites,blacks,temp,tint,vibrance,saturation,vignette,grain;
+float h(vec2 s){return fract(sin(dot(s,vec2(12.9898,78.233)))*43758.5453);}
+void main(){
+ vec2 q=vec2(uv.x,1.-uv.y);vec3 c=texture2D(t,q).rgb;
+ if(bypass>.5){gl_FragColor=vec4(c,1.);return;}
+ c*=pow(2.,exposure);
+ float l=dot(c,vec3(.2126,.7152,.0722));
+ c+=shadows*.4*(1.-smoothstep(0.,.5,l))+highlights*.4*smoothstep(.5,1.,l);
+ c+=blacks*.1;c*=1.+whites*.2;
+ c.r+=temp*.1;c.b-=temp*.1;c.g-=tint*.08;
+ c=(c-.5)*(1.+contrast)+.5;
+ float g=dot(c,vec3(.2126,.7152,.0722));
+ float sat=max(max(c.r,c.g),c.b)-min(min(c.r,c.g),c.b);
+ c=mix(vec3(g),c,max(0.,1.+saturation+vibrance*(1.-sat)));
+ c*=1.-vignette*smoothstep(.3,.95,distance(q,vec2(.5)));
+ c+=(h(q/px*.001+q)-.5)*grain*.25;
+ gl_FragColor=vec4(clamp(c,0.,1.),1.);}`;
+function sh(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);return s;}
+const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,vs));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,fs));gl.linkProgram(pr);gl.useProgram(pr);
+const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+const loc=gl.getAttribLocation(pr,"p");gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+const tex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,tex);
+[[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR],[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE]].forEach(a=>gl.texParameteri(gl.TEXTURE_2D,a[0],a[1]));
+let bypass=0,raf=0,loaded=false;
+function draw(){raf=0;if(!loaded)return;
+ gl.viewport(0,0,cv.width,cv.height);
+ S.forEach(s=>gl.uniform1f(gl.getUniformLocation(pr,s[0]),V[s[0]]));
+ gl.uniform1f(gl.getUniformLocation(pr,"bypass"),bypass);
+ gl.uniform2f(gl.getUniformLocation(pr,"px"),cv.width,cv.height);
+ gl.drawArrays(gl.TRIANGLE_STRIP,0,4);}
+function queue(){if(!raf)raf=requestAnimationFrame(draw);}
+const box=document.getElementById("sliders"),els={};
+S.forEach(s=>{const r=document.createElement("div");r.className="row";
+ r.innerHTML=`<span>${s[1]}</span><input type="range" min="${s[2]}" max="${s[3]}" step="0.01" value="${s[4]}"><span>0</span>`;
+ const i=r.children[1],n=r.children[2];els[s[0]]=[i,n];
+ i.oninput=()=>{V[s[0]]=+i.value;n.textContent=Math.round(i.value*100);queue();};
+ i.ondblclick=()=>{i.value=s[4];i.oninput();};box.appendChild(r);});
+function apply(o){S.forEach(s=>{const v=o&&o[s[0]]!==undefined?o[s[0]]:s[4];V[s[0]]=v;els[s[0]][0].value=v;els[s[0]][1].textContent=Math.round(v*100);});queue();}
+document.getElementById("reset").onclick=()=>apply();
+document.querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>apply(P[b.dataset.p]));
+const cmp=document.getElementById("cmp");
+["touchstart","mousedown"].forEach(e=>cmp.addEventListener(e,ev=>{ev.preventDefault();bypass=1;queue();}));
+["touchend","mouseup","mouseleave","touchcancel"].forEach(e=>cmp.addEventListener(e,()=>{bypass=0;queue();}));
+const file=document.getElementById("file");
+document.getElementById("open").onclick=()=>file.click();
+file.onchange=()=>{const f=file.files[0];if(!f)return;const img=new Image();
+ img.onload=()=>{const M=3000,k=Math.min(1,M/Math.max(img.width,img.height));
+  const w=Math.round(img.width*k),hh=Math.round(img.height*k);
+  const t=document.createElement("canvas");t.width=w;t.height=hh;t.getContext("2d").drawImage(img,0,0,w,hh);
+  cv.width=w;cv.height=hh;gl.bindTexture(gl.TEXTURE_2D,tex);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,t);
+  loaded=true;empty.hidden=true;cv.hidden=false;apply();URL.revokeObjectURL(img.src);};
+ img.src=URL.createObjectURL(f);};
+document.getElementById("save").onclick=()=>{if(!loaded){alert("Open a photo first.");return;}
+ draw();cv.toBlob(async b=>{const f=new File([b],"lightcraft.jpg",{type:"image/jpeg"});
+  try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});return;}}catch(e){}
+  const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="lightcraft.jpg";a.click();},"image/jpeg",.95);};
+</script>
+</body>
+</html>
