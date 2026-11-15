@@ -3,48 +3,63 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>LightCraft</title>
 <style>
-:root{--bg:#161514;--panel:#211f1e;--line:#35312e;--txt:#e8e2d6;--dim:#8f877b;--amber:#d9a441}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--bg:#0e0e10;--s:#17171a;--s2:#222226;--line:#2c2c31;--txt:#ececee;--dim:#85858c;--ac:#d9a441}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font-family:system-ui,sans-serif;overflow:hidden}
 #app{display:flex;flex-direction:column;height:100%;padding-top:env(safe-area-inset-top,0)}
-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--line)}
-h1{font-size:18px;margin:0;font-weight:600}
-button{font:inherit;color:var(--txt);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 12px}
-button.main,button.on{background:var(--amber);color:#1a1405;border-color:var(--amber);font-weight:600}
-#stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:8px}
+header{height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:var(--bg)}
+h1{font-size:17px;margin:0;font-weight:700;letter-spacing:.3px}
+button{font:inherit;color:var(--txt);background:var(--s2);border:0;border-radius:18px;padding:8px 15px;font-size:14px}
+button.main{background:var(--ac);color:#1a1405;font-weight:700}
+button.on{background:#fff;color:#111}
+header div{display:flex;gap:8px}
+#stage{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:6px;background:#08080a}
 canvas{max-width:100%;max-height:100%;object-fit:contain}
-#empty{color:var(--dim);text-align:center;padding:20px}
-#panel{background:var(--panel);border-top:1px solid var(--line);height:46%;display:flex;flex-direction:column}
-.tabs{display:flex;overflow-x:auto;border-bottom:1px solid var(--line)}
-.tabs button{flex:none;border:0;border-radius:0;background:none;padding:12px 14px;color:var(--dim)}
-.tabs button.on{background:none;color:var(--amber);box-shadow:inset 0 -2px var(--amber)}
-.body{flex:1;overflow-y:auto;padding:8px 14px calc(12px + env(safe-area-inset-bottom,0))}
-.bar{display:flex;gap:8px;overflow-x:auto;padding:4px 0 8px}
-.bar button{white-space:nowrap;flex:none}
-.row{display:grid;grid-template-columns:92px 1fr 40px;align-items:center;gap:8px;margin:6px 0;font-size:14px}
-.row span:last-child{color:var(--dim);text-align:right;font-size:12px}
-input[type=range]{width:100%;accent-color:var(--amber)}
-.hd{margin:14px 0 4px;color:var(--dim);font-size:13px}
-.chips button{width:34px;height:34px;border-radius:50%;padding:0;border:2px solid var(--line)}
-.chips button.on{border-color:#fff}
-label.ck{display:flex;gap:8px;align-items:center;margin:10px 0}
+#home{text-align:center;padding:20px}
+#home h2{font-size:26px;margin:0 0 6px}#home p{color:var(--dim);margin:0 0 26px}
+#home button{display:block;width:230px;margin:10px auto;padding:15px;font-size:16px}
+#cmp{position:absolute;right:12px;bottom:12px;background:rgba(30,30,34,.9);border:1px solid var(--line)}
+#sheet{background:var(--s);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0)}
+#sbox{padding:6px 18px 0}
+#srow{display:flex;justify-content:space-between;align-items:center;font-size:14px}
+#srow button{background:none;padding:4px 0;min-width:44px;text-align:right;color:var(--ac);font-weight:600}
+#trk{position:relative;height:42px;touch-action:none}
+#rail{position:absolute;left:0;right:0;top:19px;height:4px;border-radius:2px;background:#3a3a3f}
+#fill{position:absolute;top:0;height:100%;background:var(--ac);border-radius:2px}
+#thumb{position:absolute;top:11px;width:20px;height:20px;margin-left:-10px;border-radius:50%;background:#fff;box-shadow:0 1px 4px #000a}
+.strip{display:flex;overflow-x:auto;scrollbar-width:none}.strip::-webkit-scrollbar{display:none}
+#chips,#mix{gap:6px;padding:6px 12px}
+#chips button{flex:none;padding:7px 13px;font-size:13px;color:var(--dim)}
+#chips button.on{color:#111}
+#chips button.mod::after{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--ac);margin-left:6px;vertical-align:middle}
+#mix button{flex:none;width:30px;height:30px;padding:0;border-radius:50%;border:2px solid transparent}
+#mix button.on{border-color:#fff}
+#tools{border-top:1px solid var(--line)}
+#tools button{flex:1 0 66px;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border-radius:0;color:var(--dim);font-size:11px;padding:9px 4px 7px}
+#tools button.on{color:var(--ac)}#tools svg{width:22px;height:22px}
 .hide{display:none!important}
 #cam{position:fixed;inset:0;background:#000;z-index:9;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0)}
+#camtop{display:flex;justify-content:space-between;padding:10px 12px;gap:6px}
+#camtop button{background:#26262a;padding:8px 12px;font-size:13px}
 #vid{flex:1;min-height:0;width:100%;object-fit:contain}
-#camctl{max-height:34%;overflow-y:auto;padding:6px 14px;background:var(--panel)}
-.camrow{display:flex;justify-content:space-around;padding:12px 0 calc(12px + env(safe-area-inset-bottom,0));background:var(--panel)}
+#camctl{max-height:32%;overflow-y:auto;padding:6px 16px;background:var(--s)}
+.crow{display:grid;grid-template-columns:84px 1fr 44px;gap:8px;align-items:center;margin:6px 0;font-size:13px}
+.crow input{width:100%;accent-color:var(--ac)}
+.camrow{display:flex;justify-content:space-around;align-items:center;padding:14px 0 calc(14px + env(safe-area-inset-bottom,0))}
+#shot{width:72px;height:72px;border-radius:50%;background:#fff;border:5px solid #777;padding:0}
 </style></head><body>
 <div id="app">
-<header><h1>LightCraft</h1><div style="display:flex;gap:8px"><button id="open">Open photo</button><button id="save" class="main">Export</button></div></header>
-<div id="stage"><div id="empty">Open a photo or use Camera to start</div><canvas id="cv" hidden></canvas></div>
-<div id="panel"><div class="tabs" id="tabs"></div><div class="body">
-<div class="bar"><button id="cmp">Hold to compare</button><button id="reset">Reset</button><button id="auto">Auto</button><button id="savep">Save preset</button><span id="pbar" style="display:contents"></span></div>
-<div id="t-light"></div><div id="t-color" class="hide"></div><div id="t-detail" class="hide"></div><div id="t-sharpen" class="hide"></div><div id="t-blur" class="hide"></div><div id="t-crop" class="hide"></div><div id="t-camera" class="hide"></div>
-</div></div></div>
-<div id="cam" class="hide"><video id="vid" playsinline autoplay muted></video><div id="camctl"></div>
-<div class="camrow"><button id="cx">Close</button><button id="shot" class="main">Capture</button><button id="cf">Flip</button></div></div>
+<header><h1>LightCraft</h1><div><button id="open">Open</button><button id="save" class="main hide">Export</button></div></header>
+<div id="stage"><div id="home"><h2>LightCraft</h2><p>Edit like a pro, right on your phone</p><button id="open2" class="main">Open photo</button><button id="cam2">Camera</button></div><canvas id="cv" hidden></canvas><button id="cmp" class="hide">Compare</button></div>
+<div id="sheet" class="hide"><div id="sbox"><div id="srow"><span id="sn"></span><button id="sv">0</button></div><div id="trk"><div id="rail"><div id="fill"></div></div><div id="thumb"></div></div></div>
+<div id="mix" class="strip hide"></div><div id="chips" class="strip"></div><nav id="tools" class="strip"></nav></div>
+</div>
+<div id="cam" class="hide"><div id="camtop"><button id="cx">Close</button><button id="fl">Flash off</button><button id="aitog" class="on">AI</button><button id="cf">Flip</button></div>
+<video id="vid" playsinline autoplay muted></video><div id="camctl" class="hide"></div>
+<div class="camrow"><button id="pro">Pro</button><button id="shot"></button><span style="width:60px"></span></div></div>
 <input type="file" id="file" accept="image/*" hidden>
 <script>
+
 const $=id=>document.getElementById(id);
 const S=[
 ["exposure","Exposure",-2,2,0,"light"],["brightness","Brightness",-1,1,0,"light"],["contrast","Contrast",-1,1,0,"light"],["highlights","Highlights",-1,1,0,"light"],["shadows","Shadows",-1,1,0,"light"],["whites","Whites",-1,1,0,"light"],["blacks","Blacks",-1,1,0,"light"],["vignette","Vignette",0,1,0,"light"],["grain","Grain",0,1,0,"light"],
@@ -58,13 +73,13 @@ const P={Warm:{temp:.35,vibrance:.2,contrast:.1},Cool:{temp:-.35,tint:.05,contra
 try{Object.assign(P,JSON.parse(localStorage.getItem("lc_presets")||"{}"));}catch(e){}
 const V={};S.forEach(s=>V[s[0]]=s[4]);
 const HS=Array.from({length:8},()=>[0,0,0]);
-const NEWCROP=()=>({r:0,flip:false,ang:0,ra:[0,1],land:true});
+const NEWCROP=()=>({r:0,flip:false,ang:0,cl:0,cr:0,ct:0,cb:0,land:true});
 let crop=NEWCROP(),bmode=0,bc=[.5,.5],selC=0;
 const COL=[["Red","#e5484d"],["Orange","#f08c3a"],["Yellow","#e8d44d"],["Green","#4caf50"],["Aqua","#3fc1c9"],["Blue","#3d7be0"],["Purple","#8e5ad7"],["Magenta","#d44c9c"]];
 const cv=$("cv"),gl=cv.getContext("webgl",{preserveDrawingBuffer:true,antialias:false});
 const vs="attribute vec2 p;varying vec2 uv;void main(){uv=p*.5+.5;gl_Position=vec4(p,0.,1.);}";
 const fs=`precision highp float;varying vec2 uv;uniform sampler2D t,mk;uniform float bypass,bmode;
-uniform mat2 M;uniform vec2 cs,ss,tx,bc;uniform vec3 hsl[8];
+uniform mat2 M;uniform vec2 cs,ss,tx,bc,qo;uniform vec3 hsl[8];
 uniform float exposure,brightness,contrast,highlights,shadows,whites,blacks,temp,tint,vibrance,saturation,gsH,gsS,gmH,gmS,ghH,ghS,texAmt,clarity,dehaze,sharpen,sradius,smask,nrl,nrc,bamt,bfocus,bfeather,vignette,grain;
 float h(vec2 s){return fract(sin(dot(s,vec2(12.9898,78.233)))*43758.5453);}
 vec3 smp(vec2 q){return texture2D(t,q).rgb;}
@@ -74,7 +89,7 @@ vec3 rgb2hsv(vec3 c){vec4 K=vec4(0.,-1./3.,2./3.,-1.);vec4 p=mix(vec4(c.bg,K.wz)
 vec3 hsv2rgb(vec3 c){vec4 K=vec4(1.,2./3.,1./3.,3.);vec3 p=abs(fract(c.xxx+K.xyz)*6.-K.www);return c.z*mix(K.xxx,clamp(p-K.xxx,0.,1.),c.y);}
 float cn(int i){if(i==0)return 0.;if(i==1)return .0833;if(i==2)return .1667;if(i==3)return .3333;if(i==4)return .5;if(i==5)return .625;if(i==6)return .75;return .875;}
 void main(){
- vec2 ou=vec2(uv.x,1.-uv.y);vec2 q=M*((ou-.5)*cs)/ss+.5;
+ vec2 ou=vec2(uv.x,1.-uv.y);vec2 q=(M*((ou-.5)*cs)+qo)/ss+.5;
  vec3 o=smp(q);
  if(bypass>.5){gl_FragColor=vec4(o,1.);return;}
  if(bamt>0.&&bmode>.5){float m;
@@ -122,141 +137,159 @@ gl.texImage2D(gl.TEXTURE_2D,0,gl.LUMINANCE,1,1,0,gl.LUMINANCE,gl.UNSIGNED_BYTE,n
 gl.activeTexture(gl.TEXTURE0);
 const U={};const u=n=>U[n]||(U[n]=gl.getUniformLocation(pr,n));
 gl.uniform1i(u("t"),0);gl.uniform1i(u("mk"),1);
-let bypass=0,raf=0,loaded=false,W=1,H=1,M=[1,0,0,1],CW=1,CH=1,srcCv=null;
+let bypass=0,raf=0,loaded=false,W=1,H=1,M=[1,0,0,1],CW=1,CH=1,srcCv=null,OF=[0,0],BW=1,BH=1;
 const mul=(a,b)=>[a[0]*b[0]+a[1]*b[2],a[0]*b[1]+a[1]*b[3],a[2]*b[0]+a[3]*b[2],a[2]*b[1]+a[3]*b[3]];
 const rot=d=>{const r=d*Math.PI/180,c=Math.cos(r),s=Math.sin(r);return[c,-s,s,c];};
 function layout(){if(!loaded)return;
- const odd=crop.r%2,Wr=odd?H:W,Hr=odd?W:H,ra=crop.ra;
- const ar=ra[0]?(crop.land?ra[0]/ra[1]:ra[1]/ra[0]):Wr/Hr;
+ const odd=crop.r%2,Wr=odd?H:W,Hr=odd?W:H,a0=Wr/Hr;
  const th=Math.abs(crop.ang)*Math.PI/180,c=Math.cos(th),s=Math.sin(th);
- const ch=Math.min(Wr/(ar*c+s),Hr/(ar*s+c)),cw=ar*ch;
- CW=cw;CH=ch;cv.width=Math.round(cw);cv.height=Math.round(ch);
- M=mul(mul(rot(-crop.r*90),[crop.flip?-1:1,0,0,1]),rot(crop.ang));queue();}
+ const h0=Math.min(Wr/(a0*c+s),Hr/(a0*s+c)),w0=a0*h0;BW=w0;BH=h0;
+ CW=Math.max(w0*(1-crop.cl-crop.cr),8);CH=Math.max(h0*(1-crop.ct-crop.cb),8);cv.width=Math.round(CW);cv.height=Math.round(CH);
+ const of=[(crop.cl-crop.cr)/2*w0,(crop.ct-crop.cb)/2*h0],T=mul(rot(-crop.r*90),[crop.flip?-1:1,0,0,1]);
+ M=mul(T,rot(crop.ang));OF=[T[0]*of[0]+T[1]*of[1],T[2]*of[0]+T[3]*of[1]];queue();}
 function draw(){raf=0;if(!loaded)return;
  gl.viewport(0,0,cv.width,cv.height);
  S.forEach(s=>gl.uniform1f(u(s[0]),V[s[0]]));
  gl.uniform1f(u("bypass"),bypass);gl.uniform1f(u("bmode"),bmode);gl.uniform2f(u("bc"),bc[0],bc[1]);
  gl.uniform3fv(u("hsl[0]"),new Float32Array(HS.flat()));
  gl.uniformMatrix2fv(u("M"),false,new Float32Array([M[0],M[2],M[1],M[3]]));
- gl.uniform2f(u("cs"),CW,CH);gl.uniform2f(u("ss"),W,H);gl.uniform2f(u("tx"),1/W,1/H);
+ gl.uniform2f(u("cs"),CW,CH);gl.uniform2f(u("ss"),W,H);gl.uniform2f(u("tx"),1/W,1/H);gl.uniform2f(u("qo"),OF[0],OF[1]);
  gl.drawArrays(gl.TRIANGLE_STRIP,0,4);}
 function queue(){if(!raf)raf=requestAnimationFrame(draw);}
-/* ---- UI builders ---- */
-const els={};
-function slider(host,label,min,max,def,on){const r=document.createElement("div");r.className="row";
- r.innerHTML=`<span>${label}</span><input type="range" min="${min}" max="${max}" step="0.01" value="${def}"><span>0</span>`;
- const i=r.children[1],n=r.children[2];
- i.oninput=()=>{n.textContent=max>5?i.value:Math.round(i.value*100);on(+i.value);};
- i.ondblclick=()=>{i.value=def;i.oninput();};host.appendChild(r);return[i,n];}
-function head(host,t){const d=document.createElement("div");d.className="hd";d.textContent=t;host.appendChild(d);}
-S.forEach(s=>{const host=$("t-"+s[5]);if(HD[s[0]])head(host,HD[s[0]]);els[s[0]]=slider(host,s[1],s[2],s[3],s[4],v=>{V[s[0]]=v;queue();});});
-/* color mixer */
-const cc=$("t-color");head(cc,"Color mixer");
-const chips=document.createElement("div");chips.className="bar chips";cc.appendChild(chips);
-COL.forEach((c,i)=>{const b=document.createElement("button");b.style.background=c[1];b.onclick=()=>{selC=i;syncHSL();};chips.appendChild(b);});
-const hs=["Hue","Saturation","Luminance"].map((x,k)=>slider(cc,x,-1,1,0,v=>{HS[selC][k]=v;queue();}));
-function syncHSL(){[...chips.children].forEach((b,i)=>b.classList.toggle("on",i==selC));hs.forEach((e,k)=>{e[0].value=HS[selC][k];e[1].textContent=Math.round(HS[selC][k]*100);});}
-/* blur tab */
-const bt=$("t-blur"),bb=document.createElement("div");bb.className="bar";
-["Off","Portrait","Auto background"].forEach((n,i)=>{const b=document.createElement("button");b.textContent=n;b.className=i?"":"on";b.onclick=()=>setMode(i);bb.appendChild(b);});
-bt.prepend(bb);
-const hint=document.createElement("div");hint.className="hd";hint.textContent="Portrait: tap the photo to set the sharp area. Auto: finds the main subject.";bt.insertBefore(hint,bb.nextSibling);
-function setMode(i){bmode=i;[...bb.children].forEach((b,k)=>b.classList.toggle("on",k==i));queue();}
+/* ===== Lightroom-style UI ===== */
+const RB="linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)";
+const LBL={temp:"Temperature",gsH:"Shadow hue",gsS:"Shadow amount",gmH:"Mid hue",gmS:"Mid amount",ghH:"Highlight hue",ghS:"Highlight amount",texAmt:"Texture",sharpen:"Sharpening",sradius:"Radius",smask:"Masking",nrl:"Noise reduction",nrc:"Color noise",bamt:"Blur strength",bfocus:"Focus size",bfeather:"Feather"};
+const BG={temp:"linear-gradient(90deg,#3d7be0,#ddd,#f0b429)",tint:"linear-gradient(90deg,#4caf50,#ddd,#d44c9c)",gsH:RB,gmH:RB,ghH:RB};
+const PR={};let aiS=1,aiTarget={},ratioSel="",ratioAB=[0,1];
+S.forEach(s=>PR[s[0]]={label:LBL[s[0]]||s[1],min:s[2],max:s[3],def:s[4],bg:BG[s[0]],get:()=>V[s[0]],set:v=>{V[s[0]]=v;queue();}});
+["bamt","bfocus","bfeather"].forEach(k=>PR[k].uni=true);
+PR.ai={label:"AI strength",min:0,max:1,def:1,get:()=>aiS,set:v=>{aiS=v;applyAI();}};
+["Hue","Saturation","Luminance"].forEach((n,k)=>PR["hsl"+k]={label:n,min:-1,max:1,def:0,bg:k?null:RB,get:()=>HS[selC][k],set:v=>{HS[selC][k]=v;queue();}});
+PR.ang={label:"Straighten",min:-30,max:30,def:0,get:()=>crop.ang,set:v=>{crop.ang=v;layout();}};
+const OPP={cl:"cr",cr:"cl",ct:"cb",cb:"ct"};
+[["cl","Crop left"],["cr","Crop right"],["ct","Crop top"],["cb","Crop bottom"]].forEach(([k,n])=>PR[k]={label:n,min:0,max:.5,def:0,get:()=>crop[k],set:v=>{crop[k]=Math.min(v,.9-crop[OPP[k]]);layout();}});
+const isUni=p=>p.uni||p.def==p.min||p.def==p.max;
+const toD=(p,v)=>isUni(p)?(v-p.min)/(p.max-p.min)*100:(v>=p.def?(v-p.def)/(p.max-p.def):(v-p.def)/(p.def-p.min))*100;
+const fromD=(p,d)=>isUni(p)?p.min+d/100*(p.max-p.min):(d>=0?p.def+d/100*(p.max-p.def):p.def+d/100*(p.def-p.min));
+const isMod=id=>{const p=PR[id];return Math.abs(toD(p,p.get())-toD(p,p.def))>.5;};
+let cur=null,tool="light",items=[];
+const trk=$("trk"),fill=$("fill"),thumb=$("thumb");
+function showSlider(){const sb=$("sbox");if(!cur){sb.classList.add("hide");return;}sb.classList.remove("hide");
+ const p=PR[cur],d=toD(p,p.get()),uni=isUni(p),f=uni?d/100:(d+100)/200;
+ $("sn").textContent=p.label;$("sv").textContent=Math.round(d);thumb.style.left=f*100+"%";
+ $("rail").style.background=p.bg||"#3a3a3f";fill.style.display=p.bg?"none":"";
+ fill.style.left=(uni?0:Math.min(50,f*100))+"%";fill.style.width=(uni?f*100:Math.abs(f*100-50))+"%";}
+function setD(d){const p=PR[cur],uni=isUni(p);d=Math.max(uni?0:-100,Math.min(100,d));if(!uni&&Math.abs(d)<2)d=0;p.set(fromD(p,d));refresh();}
+let drag=null;
+trk.addEventListener("pointerdown",e=>{if(!cur)return;trk.setPointerCapture(e.pointerId);drag={x:e.clientX,m:false};});
+trk.addEventListener("pointermove",e=>{if(!drag)return;if(Math.abs(e.clientX-drag.x)>8)drag.m=true;
+ if(drag.m){const r=trk.getBoundingClientRect(),f=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));setD(isUni(PR[cur])?f*100:f*200-100);}});
+trk.addEventListener("pointerup",e=>{if(!drag)return;if(!drag.m){const r=thumb.getBoundingClientRect();setD(toD(PR[cur],PR[cur].get())+(e.clientX>r.left+r.width/2?2:-2));}drag=null;});
+trk.addEventListener("pointercancel",()=>drag=null);
+$("sv").onclick=()=>{if(!cur)return;PR[cur].set(PR[cur].def);refresh();};
+function refresh(){[...$("chips").children].forEach((b,i)=>{const it=items[i];if(!it)return;b.classList.toggle("on",it.p?it.p==cur:!!(it.on&&it.on()));b.classList.toggle("mod",!!it.p&&isMod(it.p));});showSlider();}
+const L7=["exposure","brightness","contrast","highlights","shadows","whites","blacks"],pp=a=>a.map(p=>({p}));
+const RT=[["Original",0,0],["1:1",1,1],["5:4",5,4],["4:3",4,3],["3:2",3,2],["16:9",16,9],["2:1",2,1],["21:9",21,9],["7:5",7,5]];
+const BAL=["exposure","contrast","highlights","shadows","whites","blacks","temp","tint"],GRD=["vibrance","gsH","gsS","ghH","ghS"];
+const svg=s=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${s}</svg>`;
+const IC={auto:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16v4M17 18h4"/>',light:'<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',color:'<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>',mixer:'<circle cx="9" cy="9" r="5"/><circle cx="15" cy="9" r="5"/><circle cx="12" cy="15" r="5"/>',grade:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/>',fx:'<rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="12" cy="12" r="5"/>',detail:'<path d="M3 19l6-10 4 6 3-4 5 8z"/>',sharp:'<path d="M12 3l9 17H3z"/>',blur:'<circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7" stroke-dasharray="2 3"/>',crop:'<path d="M7 2v15h15M2 7h15v15"/>',presets:'<path d="M4 6h8M18 6h2M4 12h2M12 12h8M4 18h10M20 18h0"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>',camera:'<path d="M3 8h4l2-3h6l2 3h4v11H3z"/><circle cx="12" cy="13" r="3.5"/>'};
+const TOOLS=[
+["auto","Auto",()=>[{l:"AI Enhance",a:()=>aiRun()},{l:"Auto balance",a:()=>aiRun(BAL)},{l:"Auto grade",a:()=>aiRun(GRD)},{p:"ai"}]],
+["light","Light",()=>pp(L7)],["color","Color",()=>pp(["temp","tint","vibrance","saturation"])],
+["mixer","Mixer",()=>pp(["hsl0","hsl1","hsl2"])],["grade","Grading",()=>pp(["gsH","gsS","gmH","gmS","ghH","ghS"])],
+["fx","Effects",()=>pp(["vignette","grain"])],["detail","Detail",()=>pp(["texAmt","clarity","dehaze"])],
+["sharp","Sharpen",()=>pp(["sharpen","sradius","smask","nrl","nrc"])],
+["blur","Blur",()=>[{l:"Off",a:()=>setMode(0),on:()=>bmode==0},{l:"Portrait",a:()=>setMode(1),on:()=>bmode==1},{l:"Auto",a:()=>setMode(2),on:()=>bmode==2},{p:"bamt"},{p:"bfocus"},{p:"bfeather"}]],
+["crop","Crop",()=>[...pp(["ang","cl","cr","ct","cb"]),{l:"Auto level",a:autoLevel},{l:"Rotate",a:()=>{crop.r=(crop.r+1)%4;layout();}},{l:"Flip",a:()=>{crop.flip=!crop.flip;layout();},on:()=>crop.flip},
+ {l:crop.land?"Landscape":"Portrait",a:()=>{crop.land=!crop.land;ratioAB[0]?setRatio(...ratioAB):layout();}},
+ ...RT.map(([n,a,b])=>({l:!a?n:(crop.land||a==b?a+":"+b:b+":"+a),a:()=>{ratioSel=n;ratioAB=[a,b];setRatio(a,b);},on:()=>ratioSel==n})),{l:"Reset crop",a:resetCrop}]],
+["presets","Presets",()=>[...Object.keys(P).map(k=>({l:k,a:()=>apply(P[k])})),{l:"Save current",a:savePreset},{l:"Reset all",a:()=>{apply();setMode(0);}}]],
+["camera","Camera",null]];
+function renderChips(){const box=$("chips");box.innerHTML="";items=TOOLS.find(t=>t[0]==tool)[2]();
+ items.forEach(it=>{const b=document.createElement("button");b.textContent=it.l||PR[it.p].label;
+  b.onclick=()=>{if(it.p)cur=it.p;else{it.a();renderChips();}refresh();};box.appendChild(b);});}
+function setTool(id){tool=id;renderChips();const f=items.find(i=>i.p);cur=f?f.p:null;
+ $("mix").classList.toggle("hide",id!="mixer");[...$("tools").children].forEach(b=>b.classList.toggle("on",b.dataset.t==id));refresh();}
+TOOLS.forEach(t=>{const b=document.createElement("button");b.dataset.t=t[0];b.innerHTML=svg(IC[t[0]])+t[1];b.onclick=()=>t[2]?setTool(t[0]):startCam();$("tools").appendChild(b);});
+COL.forEach((c,i)=>{const b=document.createElement("button");b.style.background=c[1];b.onclick=()=>{selC=i;[...$("mix").children].forEach((x,k)=>x.classList.toggle("on",k==i));refresh();};$("mix").appendChild(b);});
+$("mix").children[0].classList.add("on");
+function setMode(i){bmode=i;queue();}
 cv.onclick=e=>{if(bmode!=1)return;const r=cv.getBoundingClientRect();bc=[(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height];queue();};
-/* crop tab */
-const ct=$("t-crop");
-const ang=slider(ct,"Straighten",-30,30,0,v=>{crop.ang=v;layout();});
-const cb=document.createElement("div");cb.className="bar";
-cb.innerHTML="<button id='rot'>Rotate 90°</button><button id='flip'>Flip</button><button id='as' class='main'>Auto straighten</button><button id='rc'>Reset crop</button>";
-const ob=document.createElement("div");ob.className="bar";ob.innerHTML="<button id='land' class='on'>Landscape</button><button id='port'>Portrait</button>";
-const ab=document.createElement("div");ab.className="bar";
-const RT=[["Original",0,1],["1:1",1,1],["5:4",5,4],["4:3",4,3],["3:2",3,2],["16:9",16,9],["2:1",2,1],["21:9",21,9],["7:5",7,5]];
-function ratios(){ab.innerHTML="";RT.forEach(a=>{const b=document.createElement("button");b.textContent=!a[1]||a[0]=="Original"?a[0]:(crop.land?a[0]:a[2]+":"+a[1]);
- b.className=crop.ra[0]==a[1]&&crop.ra[1]==a[2]?"on":"";b.onclick=()=>{crop.ra=[a[1],a[2]];ratios();layout();};ab.appendChild(b);});}
-[cb,ob,ab].forEach(x=>ct.appendChild(x));ratios();
-function orient(l){crop.land=l;$("land").classList.toggle("on",l);$("port").classList.toggle("on",!l);ratios();layout();}
-$("land").onclick=()=>orient(true);$("port").onclick=()=>orient(false);
-$("rot").onclick=()=>{crop.r=(crop.r+1)%4;layout();};
-$("flip").onclick=()=>{crop.flip=!crop.flip;layout();};
-function setAng(v){crop.ang=v;ang[0].value=v;ang[1].textContent=Math.round(v*100);layout();}
-$("rc").onclick=()=>{crop=NEWCROP();ang[0].value=0;ang[1].textContent="0";$("land").classList.add("on");$("port").classList.remove("on");ratios();layout();};
-$("as").onclick=()=>{if(!loaded)return;const n=256,k=Math.min(1,n/Math.max(W,H)),w=Math.round(W*k),h=Math.round(H*k);
+function setRatio(a,b){crop.cl=crop.cr=crop.ct=crop.cb=0;layout();
+ if(a){const ar=crop.land?a/b:b/a,fa=BW/BH;if(ar>fa){crop.ct=crop.cb=(1-(BW/ar)/BH)/2;}else{crop.cl=crop.cr=(1-(BH*ar)/BW)/2;}layout();}}
+function resetCrop(){crop=NEWCROP();ratioSel="";ratioAB=[0,0];layout();}
+function autoLevel(){if(!loaded)return;const n=256,k=Math.min(1,n/Math.max(W,H)),w=Math.round(W*k),h=Math.round(H*k);
  const c=document.createElement("canvas");c.width=w;c.height=h;const x=c.getContext("2d");x.drawImage(srcCv,0,0,w,h);const d=x.getImageData(0,0,w,h).data;
- const g=(i,j)=>{const p=(j*w+i)*4;return d[p]*.3+d[p+1]*.59+d[p+2]*.11;};
- const bins=new Float32Array(61);
+ const g=(i,j)=>{const p=(j*w+i)*4;return d[p]*.3+d[p+1]*.59+d[p+2]*.11;};const bins=new Float32Array(61);
  for(let j=1;j<h-1;j++)for(let i=1;i<w-1;i++){const gx=g(i+1,j)-g(i-1,j),gy=g(i,j+1)-g(i,j-1),m=Math.hypot(gx,gy);if(m<40)continue;
   let a=Math.atan2(gy,gx)*180/Math.PI;a=(((a+45)%90)+90)%90-45;if(Math.abs(a)<=15)bins[Math.round((a+15)*2)]+=m;}
  let best=30,bv=-1;for(let i=1;i<60;i++){const v=bins[i-1]+bins[i]*2+bins[i+1];if(v>bv){bv=v;best=i;}}
- const dl=best/2-15;setAng(Math.round((crop.flip?-dl:dl)*10)/10);};
-/* camera tab */
-const kt=$("t-camera");
-kt.innerHTML=`<div class="bar"><button id="opencam" class="main">Open camera</button><button id="autob">Auto enhance this photo</button></div>
-<label class="ck"><input type="checkbox" id="chB" checked> Auto balance after capture</label>
-<label class="ck"><input type="checkbox" id="chG" checked> Auto color grading after capture</label>
-<div class="hd">Camera has manual shutter, ISO, exposure, white balance, focus and zoom (whatever your phone allows).</div>`;
-let stream,track,face="environment";
+ const dl=best/2-15;crop.ang=Math.round((crop.flip?-dl:dl)*10)/10;layout();}
+/* ---- AI enhance ---- */
+function analyze(){const n=96,c=document.createElement("canvas");c.width=c.height=n;const x=c.getContext("2d");x.drawImage(srcCv,0,0,n,n);const d=x.getImageData(0,0,n,n).data;
+ let r=0,g=0,b=0,ss=0;const hist=new Float32Array(256),N=n*n;
+ for(let i=0;i<d.length;i+=4){r+=d[i];g+=d[i+1];b+=d[i+2];ss+=Math.max(d[i],d[i+1],d[i+2])-Math.min(d[i],d[i+1],d[i+2]);hist[Math.round(d[i]*.2126+d[i+1]*.7152+d[i+2]*.0722)]++;}
+ r/=N*255;g/=N*255;b/=N*255;ss/=N*255;const m=.2126*r+.7152*g+.0722*b;
+ const pc=p=>{let a=0;for(let i=0;i<256;i++){a+=hist[i];if(a>=N*p)return i/255;}return 1;};
+ const p1=pc(.01),p5=pc(.05),p95=pc(.95),p99=pc(.99),cl=(v,a,e)=>Math.max(a,Math.min(e,v));
+ return{exposure:cl(Math.log2(.45/Math.max(m,.03)),-1.3,1.3)*.8,shadows:cl((.12-p5)*4,0,.7),highlights:-cl((p95-.9)*8,0,.6),blacks:cl(-(p1-.02)*4,-.6,0),whites:cl((.96-p99)*3,0,.6),contrast:p95-p5<.6?.15:.05,
+  temp:cl((b-r)/.2,-1,1)*.6,tint:cl((g-(r+b)/2)/.08,-1,1)*.4,vibrance:ss<.25?.3:.15,texAmt:.15,clarity:.15,dehaze:p95-p5<.5?.2:.05,sharpen:.3,smask:.3,nrl:m<.25?.3:.1,nrc:m<.25?.3:.15,gsH:.52,gsS:.15,ghH:.09,ghS:.12};}
+function applyAI(){for(const k in aiTarget){const d=PR[k].def;V[k]=d+(aiTarget[k]-d)*aiS;}queue();refresh();}
+function aiRun(keys){if(!loaded)return;const o=analyze();aiTarget={};(keys||Object.keys(o)).forEach(k=>aiTarget[k]=o[k]);aiS=1;applyAI();}
+/* ---- presets ---- */
+function apply(o){S.forEach(s=>{V[s[0]]=o&&o[s[0]]!==undefined?o[s[0]]:s[4];});HS.forEach(a=>a.fill(0));queue();refresh();}
+function savePreset(){const n=prompt("Preset name");if(!n)return;P[n]={...V};
+ try{const a=JSON.parse(localStorage.getItem("lc_presets")||"{}");a[n]=P[n];localStorage.setItem("lc_presets",JSON.stringify(a));}catch(e){}renderChips();refresh();}
+const cmp=$("cmp");
+["touchstart","mousedown"].forEach(e=>cmp.addEventListener(e,ev=>{ev.preventDefault();bypass=1;queue();}));
+["touchend","mouseup","mouseleave","touchcancel"].forEach(e=>cmp.addEventListener(e,()=>{bypass=0;queue();}));
+/* ---- camera ---- */
+let stream,track,face="environment",flash=0,aiCap=true;
+const torch=on=>{if(track)track.applyConstraints({advanced:[{torch:on}]}).catch(()=>{});};
 async function startCam(){stopCam();
  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:face,width:{ideal:4096},height:{ideal:3072}},audio:false});}
  catch(e){alert("Camera not available: "+e.message);return;}
- $("cam").classList.remove("hide");$("vid").srcObject=stream;track=stream.getVideoTracks()[0];camCtl();}
+ flash=0;$("fl").textContent="Flash off";$("cam").classList.remove("hide");$("vid").srcObject=stream;track=stream.getVideoTracks()[0];camCtl();}
 function stopCam(){if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;}
 function camCtl(){const host=$("camctl");host.innerHTML="";const caps=track.getCapabilities?track.getCapabilities():{},st=track.getSettings?track.getSettings():{};let any=false;
  [["iso","ISO"],["exposureTime","Shutter"],["exposureCompensation","Exposure"],["colorTemperature","White bal."],["focusDistance","Focus"],["zoom","Zoom"]].forEach(([k,l])=>{
-  const c=caps[k];if(!c||c.min===undefined)return;any=true;
-  const r=document.createElement("div");r.className="row";const v0=st[k]!==undefined?st[k]:c.min;
+  const c=caps[k];if(!c||c.min===undefined)return;any=true;const v0=st[k]!==undefined?st[k]:c.min;
+  const r=document.createElement("div");r.className="crow";
   r.innerHTML=`<span>${l}</span><input type="range" min="${c.min}" max="${c.max}" step="${c.step||(c.max-c.min)/100}" value="${v0}"><span>${(+v0).toFixed(1)}</span>`;
   const i=r.children[1],n=r.children[2];
   i.oninput=async()=>{n.textContent=(+i.value).toFixed(1);const a={[k]:+i.value};
    if(k=="iso"||k=="exposureTime")a.exposureMode="manual";if(k=="colorTemperature")a.whiteBalanceMode="manual";if(k=="focusDistance")a.focusMode="manual";
-   try{await track.applyConstraints({advanced:[a]});}catch(e){}};
-  host.appendChild(r);});
- if(!any)host.innerHTML="<div class='hd'>This phone does not share manual ISO/shutter controls with apps. Capture still works.</div>";
+   try{await track.applyConstraints({advanced:[a]});}catch(e){}};host.appendChild(r);});
+ if(!any)host.innerHTML="<div style='color:var(--dim);font-size:13px;padding:6px 0'>This phone does not share manual ISO/shutter controls with apps.</div>";
  const b=document.createElement("button");b.textContent="Back to auto";b.onclick=()=>{track.applyConstraints({advanced:[{exposureMode:"continuous",whiteBalanceMode:"continuous",focusMode:"continuous"}]}).catch(()=>{});camCtl();};host.appendChild(b);}
-$("opencam").onclick=startCam;$("cf").onclick=()=>{face=face=="environment"?"user":"environment";startCam();};
+$("fl").onclick=()=>{const caps=track&&track.getCapabilities?track.getCapabilities():{};if(!caps.torch){alert("Flash is not available on this camera (front camera or unsupported phone).");return;}
+ flash=(flash+1)%3;$("fl").textContent=["Flash off","Flash on","Flash auto"][flash];torch(flash==1);};
+$("aitog").onclick=()=>{aiCap=!aiCap;$("aitog").classList.toggle("on",aiCap);};
+$("pro").onclick=()=>$("camctl").classList.toggle("hide");
+$("cf").onclick=()=>{face=face=="environment"?"user":"environment";startCam();};
 $("cx").onclick=()=>{stopCam();$("cam").classList.add("hide");};
-$("shot").onclick=()=>{const v=$("vid");if(!v.videoWidth)return;const c=document.createElement("canvas");c.width=v.videoWidth;c.height=v.videoHeight;c.getContext("2d").drawImage(v,0,0);
- stopCam();$("cam").classList.add("hide");loadSource(c,c.width,c.height);autoEnhance($("chB").checked,$("chG").checked);};
-function autoEnhance(bal,grade){if(!loaded)return;const n=96,c=document.createElement("canvas");c.width=c.height=n;const x=c.getContext("2d");x.drawImage(srcCv,0,0,n,n);const d=x.getImageData(0,0,n,n).data;
- let r=0,g=0,b=0;const hist=new Float32Array(256);for(let i=0;i<d.length;i+=4){r+=d[i];g+=d[i+1];b+=d[i+2];hist[Math.round(d[i]*.2126+d[i+1]*.7152+d[i+2]*.0722)]++;}
- const N=n*n;r/=N*255;g/=N*255;b/=N*255;const m=.2126*r+.7152*g+.0722*b;
- const pc=p=>{let a=0;for(let i=0;i<256;i++){a+=hist[i];if(a>=N*p)return i/255;}return 1;};
- const p1=pc(.01),p99=pc(.99),cl=(v,a,b2)=>Math.max(a,Math.min(b2,v)),o={};
- if(bal){o.exposure=cl(Math.log2(.42/Math.max(m,.03)),-1.2,1.2)*.8;o.blacks=cl(-(p1-.02)*4,-1,0);o.whites=cl((.95-p99)*4,0,1);
-  o.temp=cl((b-r)/.2,-1,1)*.7;o.tint=cl((g-(r+b)/2)/.08,-1,1)*.5;o.contrast=.08;}
- if(grade){o.gsH=.52;o.gsS=.25;o.ghH=.08;o.ghS=.2;o.vibrance=.2;}
- apply(o);}
-$("autob").onclick=()=>autoEnhance($("chB").checked,$("chG").checked);
-$("auto").onclick=()=>autoEnhance(true,$("chG").checked);
-/* tabs */
-const TABS=[["light","Light"],["color","Color"],["detail","Detail"],["sharpen","Sharpen"],["blur","Blur"],["crop","Crop"],["camera","Camera"]];
-TABS.forEach((t,i)=>{const b=document.createElement("button");b.textContent=t[1];b.className=i?"":"on";
- b.onclick=()=>{[...$("tabs").children].forEach(x=>x.classList.toggle("on",x==b));TABS.forEach(k=>$("t-"+k[0]).classList.toggle("hide",k[0]!=t[0]));};$("tabs").appendChild(b);});
-/* presets / reset */
-function apply(o){S.forEach(s=>{const v=o&&o[s[0]]!==undefined?o[s[0]]:s[4];V[s[0]]=v;els[s[0]][0].value=v;els[s[0]][1].textContent=Math.round(v*100);});HS.forEach(a=>a.fill(0));syncHSL();queue();}
-function presetBtns(){const bar=$("pbar");bar.innerHTML="";Object.keys(P).forEach(k=>{const b=document.createElement("button");b.textContent=k;b.onclick=()=>apply(P[k]);bar.appendChild(b);});}
-presetBtns();syncHSL();
-$("reset").onclick=()=>{apply();setMode(0);};
-$("savep").onclick=()=>{const n=prompt("Preset name");if(!n)return;P[n]={...V};
- try{const a=JSON.parse(localStorage.getItem("lc_presets")||"{}");a[n]=P[n];localStorage.setItem("lc_presets",JSON.stringify(a));}catch(e){}presetBtns();};
-const cmp=$("cmp");
-["touchstart","mousedown"].forEach(e=>cmp.addEventListener(e,ev=>{ev.preventDefault();bypass=1;queue();}));
-["touchend","mouseup","mouseleave","touchcancel"].forEach(e=>cmp.addEventListener(e,()=>{bypass=0;queue();}));
-/* load / auto mask / export */
+$("shot").onclick=async()=>{const v=$("vid");if(!v.videoWidth)return;let lit=false;
+ if(flash==2){const t=document.createElement("canvas");t.width=t.height=16;const x=t.getContext("2d");x.drawImage(v,0,0,16,16);const d=x.getImageData(0,0,16,16).data;let s=0;for(let i=0;i<d.length;i+=4)s+=d[i]*.3+d[i+1]*.59+d[i+2]*.11;
+  if(s/256<70){lit=true;torch(true);await new Promise(r=>setTimeout(r,450));}}
+ const c=document.createElement("canvas");c.width=v.videoWidth;c.height=v.videoHeight;c.getContext("2d").drawImage(v,0,0);
+ if(lit)torch(false);stopCam();$("cam").classList.add("hide");loadSource(c,c.width,c.height);if(aiCap)aiRun();};
+/* ---- load / mask / export ---- */
 function autoMask(){const n=96,c=document.createElement("canvas");c.width=c.height=n;const x=c.getContext("2d");x.drawImage(srcCv,0,0,n,n);const d=x.getImageData(0,0,n,n).data;
  let r=0,g=0,b=0,k=0;for(let i=0;i<n;i++)for(const j of[0,1,n-2,n-1])for(const[a,e]of[[i,j],[j,i]]){const p=(e*n+a)*4;r+=d[p];g+=d[p+1];b+=d[p+2];k++;}
  r/=k;g/=k;b/=k;let m=new Float32Array(n*n),mx=1e-6;
- for(let y=0;y<n;y++)for(let i=0;i<n;i++){const p=(y*n+i)*4,cx=i/n-.5,cy=y/n-.5;const v=Math.hypot(d[p]-r,d[p+1]-g,d[p+2]-b)*Math.exp(-(cx*cx+cy*cy)/.18);m[y*n+i]=v;mx=Math.max(mx,v);}
+ for(let y=0;y<n;y++)for(let i=0;i<n;i++){const p=(y*n+i)*4,cx=i/n-.5,cy=y/n-.5,v=Math.hypot(d[p]-r,d[p+1]-g,d[p+2]-b)*Math.exp(-(cx*cx+cy*cy)/.18);m[y*n+i]=v;mx=Math.max(mx,v);}
  for(let pass=0;pass<4;pass++){const o=new Float32Array(n*n);for(let y=0;y<n;y++)for(let i=0;i<n;i++){let s=0,q=0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const yy=y+dy,xx=i+dx;if(yy<0||xx<0||yy>=n||xx>=n)continue;s+=m[yy*n+xx];q++;}o[y*n+i]=s/q;}m=o;}
  const out=new Uint8Array(n*n);for(let i=0;i<n*n;i++){const t=Math.max(0,Math.min(1,(m[i]/mx-.2)/.35));out[i]=Math.round(t*t*(3-2*t)*255);}
  gl.activeTexture(gl.TEXTURE1);gl.texImage2D(gl.TEXTURE_2D,0,gl.LUMINANCE,n,n,0,gl.LUMINANCE,gl.UNSIGNED_BYTE,out);gl.activeTexture(gl.TEXTURE0);}
 function loadSource(src,w0,h0){const k=Math.min(1,3000/Math.max(w0,h0));W=Math.round(w0*k);H=Math.round(h0*k);
  srcCv=document.createElement("canvas");srcCv.width=W;srcCv.height=H;srcCv.getContext("2d").drawImage(src,0,0,W,H);
  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tex);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,srcCv);
- autoMask();loaded=true;$("empty").hidden=true;cv.hidden=false;$("rc").onclick();apply();}
-const file=$("file");$("open").onclick=()=>file.click();
-file.onchange=()=>{const f=file.files[0];if(!f)return;const img=new Image();img.onload=()=>{loadSource(img,img.width,img.height);URL.revokeObjectURL(img.src);};img.src=URL.createObjectURL(f);};
-$("save").onclick=()=>{if(!loaded){alert("Open a photo first.");return;}
- draw();cv.toBlob(async b=>{const f=new File([b],"lightcraft.jpg",{type:"image/jpeg"});
-  try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});return;}}catch(e){}
-  const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="lightcraft.jpg";a.click();},"image/jpeg",.95);};
+ autoMask();loaded=true;$("home").classList.add("hide");cv.hidden=false;["sheet","save","cmp"].forEach(i=>$(i).classList.remove("hide"));
+ resetCrop();bmode=0;apply();setTool("light");}
+const file=$("file");$("open").onclick=$("open2").onclick=()=>file.click();$("cam2").onclick=startCam;
+file.onchange=()=>{const f=file.files[0];if(!f)return;const img=new Image();img.onload=()=>{loadSource(img,img.width,img.height);URL.revokeObjectURL(img.src);};img.src=URL.createObjectURL(f);file.value="";};
+$("save").onclick=()=>{draw();cv.toBlob(async b=>{const f=new File([b],"lightcraft.jpg",{type:"image/jpeg"});
+ try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});return;}}catch(e){}
+ const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="lightcraft.jpg";a.click();},"image/jpeg",.95);};
+setTool("light");
 </script></body></html>
