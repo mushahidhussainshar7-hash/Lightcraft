@@ -19,6 +19,37 @@ jobs:
       - run: mkdir -p www && cp index.html www/index.html
       - run: npx cap add android
       - run: sed -i 's#<application#<uses-permission android:name="android.permission.CAMERA" />\n    <application#' android/app/src/main/AndroidManifest.xml
+      - name: Volume key support
+        run: |
+          cat > android/app/src/main/java/com/lightcraft/app/MainActivity.java <<'EOF'
+          package com.lightcraft.app;
+          import android.os.Bundle;
+          import android.view.KeyEvent;
+          import android.webkit.JavascriptInterface;
+          import com.getcapacitor.BridgeActivity;
+          public class MainActivity extends BridgeActivity {
+            private volatile boolean camOn = false;
+            @Override
+            protected void onCreate(Bundle b) {
+              super.onCreate(b);
+              getBridge().getWebView().addJavascriptInterface(new Object() {
+                @JavascriptInterface public void cam(boolean on) { camOn = on; }
+              }, "LCNative");
+            }
+            @Override
+            public boolean dispatchKeyEvent(KeyEvent e) {
+              int k = e.getKeyCode();
+              if (camOn && (k == KeyEvent.KEYCODE_VOLUME_UP || k == KeyEvent.KEYCODE_VOLUME_DOWN)) {
+                if (e.getAction() == KeyEvent.ACTION_DOWN) {
+                  final String js = "window.lcVol&&window.lcVol('" + (k == KeyEvent.KEYCODE_VOLUME_UP ? "up" : "down") + "'," + e.getRepeatCount() + ")";
+                  runOnUiThread(() -> getBridge().getWebView().evaluateJavascript(js, null));
+                }
+                return true;
+              }
+              return super.dispatchKeyEvent(e);
+            }
+          }
+          EOF
       - run: npx cap sync android
       - run: chmod +x gradlew && ./gradlew assembleDebug
         working-directory: android
@@ -26,4 +57,4 @@ jobs:
         with:
           name: LightCraft-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
-
+          
