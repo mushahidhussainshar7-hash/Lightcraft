@@ -18,6 +18,7 @@ jobs:
       - run: npm install
       - run: mkdir -p www && cp index.html www/index.html
       - run: npx cap add android
+      - run: sed -i 's#<application#<uses-permission android:name="android.permission.CAMERA" />\n    <application#' android/app/src/main/AndroidManifest.xml
       - run: npx cap sync android
       - run: chmod +x gradlew && ./gradlew assembleDebug
         working-directory: android
