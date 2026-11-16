@@ -34,6 +34,13 @@ jobs:
               super.onCreate(b);
               getBridge().getWebView().addJavascriptInterface(new Object() {
                 @JavascriptInterface public void cam(boolean on) { camOn = on; }
+                @JavascriptInterface public void bright(boolean on) {
+                  runOnUiThread(() -> {
+                    android.view.WindowManager.LayoutParams lp = getWindow().getAttributes();
+                    lp.screenBrightness = on ? 1f : -1f;
+                    getWindow().setAttributes(lp);
+                  });
+                }
                 @JavascriptInterface public String save(String b64, String name, String mime) {
                   try {
                     byte[] data = android.util.Base64.decode(b64, android.util.Base64.DEFAULT);
@@ -64,6 +71,14 @@ jobs:
             @Override
             public boolean dispatchKeyEvent(KeyEvent e) {
               int k = e.getKeyCode();
+              if (k == KeyEvent.KEYCODE_BACK) {
+                if (e.getAction() == KeyEvent.ACTION_UP) {
+                  runOnUiThread(() -> getBridge().getWebView().evaluateJavascript("(window.lcBack?window.lcBack():false)", v -> {
+                    if (!"true".equals(v)) finish();
+                  }));
+                }
+                return true;
+              }
               if (camOn && (k == KeyEvent.KEYCODE_VOLUME_UP || k == KeyEvent.KEYCODE_VOLUME_DOWN)) {
                 if (e.getAction() == KeyEvent.ACTION_DOWN) {
                   final String js = "window.lcVol&&window.lcVol('" + (k == KeyEvent.KEYCODE_VOLUME_UP ? "up" : "down") + "'," + e.getRepeatCount() + ")";
@@ -82,4 +97,4 @@ jobs:
         with:
           name: LightCraft-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
-          
+
