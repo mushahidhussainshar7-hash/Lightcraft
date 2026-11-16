@@ -18,7 +18,7 @@ jobs:
       - run: npm install
       - run: mkdir -p www && cp index.html www/index.html
       - run: npx cap add android
-      - run: sed -i 's#<application#<uses-permission android:name="android.permission.CAMERA" />\n    <application#' android/app/src/main/AndroidManifest.xml
+      - run: sed -i 's#<application#<uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />\n    <application#' android/app/src/main/AndroidManifest.xml
       - name: Volume key support
         run: |
           cat > android/app/src/main/java/com/lightcraft/app/MainActivity.java <<'EOF'
@@ -34,6 +34,31 @@ jobs:
               super.onCreate(b);
               getBridge().getWebView().addJavascriptInterface(new Object() {
                 @JavascriptInterface public void cam(boolean on) { camOn = on; }
+                @JavascriptInterface public String save(String b64, String name, String mime) {
+                  try {
+                    byte[] data = android.util.Base64.decode(b64, android.util.Base64.DEFAULT);
+                    android.content.ContentValues v = new android.content.ContentValues();
+                    v.put(android.provider.MediaStore.Images.Media.DISPLAY_NAME, name);
+                    v.put(android.provider.MediaStore.Images.Media.MIME_TYPE, mime);
+                    if (android.os.Build.VERSION.SDK_INT >= 29) {
+                      v.put(android.provider.MediaStore.Images.Media.RELATIVE_PATH, "Pictures/LightCraft");
+                      v.put(android.provider.MediaStore.Images.Media.IS_PENDING, 1);
+                    }
+                    android.content.ContentResolver r = getContentResolver();
+                    android.net.Uri u = r.insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, v);
+                    java.io.OutputStream o = r.openOutputStream(u);
+                    o.write(data);
+                    o.close();
+                    if (android.os.Build.VERSION.SDK_INT >= 29) {
+                      v.clear();
+                      v.put(android.provider.MediaStore.Images.Media.IS_PENDING, 0);
+                      r.update(u, v, null, null);
+                    }
+                    return "ok";
+                  } catch (Exception e) {
+                    return "err: " + e.getMessage();
+                  }
+                }
               }, "LCNative");
             }
             @Override
