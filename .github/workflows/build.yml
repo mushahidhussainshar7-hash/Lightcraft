@@ -19,9 +19,10 @@ jobs:
       - run: mkdir -p www && cp index.html www/index.html
       - run: npx cap add android
       - run: sed -i 's#<application#<uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />\n    <application#' android/app/src/main/AndroidManifest.xml
-      - name: Volume key support
+      - name: Native code (volume keys, back, save, CameraX)
         run: |
-          cat > android/app/src/main/java/com/lightcraft/app/MainActivity.java <<'EOF'
+          D=android/app/src/main/java/com/lightcraft/app
+          cat > $D/MainActivity.java.base <<'EOF'
           package com.lightcraft.app;
           import android.os.Bundle;
           import android.view.KeyEvent;
@@ -90,11 +91,298 @@ jobs:
             }
           }
           EOF
+          cat > $D/MainActivity.java.native <<'EOF'
+          package com.lightcraft.app;
+          import android.Manifest;
+          import android.content.pm.PackageManager;
+          import android.graphics.Color;
+          import android.os.Bundle;
+          import android.view.KeyEvent;
+          import android.view.ViewGroup;
+          import android.webkit.JavascriptInterface;
+          import android.widget.FrameLayout;
+          import androidx.annotation.NonNull;
+          import androidx.camera.core.Camera;
+          import androidx.camera.core.CameraSelector;
+          import androidx.camera.core.ExposureState;
+          import androidx.camera.core.FocusMeteringAction;
+          import androidx.camera.core.ImageCapture;
+          import androidx.camera.core.ImageCaptureException;
+          import androidx.camera.core.MeteringPoint;
+          import androidx.camera.core.Preview;
+          import androidx.camera.core.ZoomState;
+          import androidx.camera.lifecycle.ProcessCameraProvider;
+          import androidx.camera.view.PreviewView;
+          import androidx.core.app.ActivityCompat;
+          import androidx.core.content.ContextCompat;
+          import com.getcapacitor.BridgeActivity;
+          import com.google.common.util.concurrent.ListenableFuture;
+          import java.io.File;
+          import java.io.FileInputStream;
+          import java.util.concurrent.TimeUnit;
+          public class MainActivity extends BridgeActivity {
+            private volatile boolean camOn = false;
+            private FrameLayout holder;
+            private PreviewView pv;
+            private ProcessCameraProvider provider;
+            private ImageCapture imageCapture;
+            private Camera camera;
+            private boolean pendingFront = false;
+            private double evStep = 0;
+            private int rl = 0, rt = 0, rw = 0, rh = 0;
+
+            private void js(final String code) {
+              runOnUiThread(() -> getBridge().getWebView().evaluateJavascript(code, null));
+            }
+            private static String esc(String s) {
+              return s == null ? "" : s.replace("\\", " ").replace("'", " ").replace("\n", " ");
+            }
+
+            @Override
+            protected void onCreate(Bundle b) {
+              super.onCreate(b);
+              getBridge().getWebView().addJavascriptInterface(new Object() {
+                @JavascriptInterface public void cam(boolean on) { camOn = on; }
+                @JavascriptInterface public void bright(boolean on) {
+                  runOnUiThread(() -> {
+                    android.view.WindowManager.LayoutParams lp = getWindow().getAttributes();
+                    lp.screenBrightness = on ? 1f : -1f;
+                    getWindow().setAttributes(lp);
+                  });
+                }
+                @JavascriptInterface public String save(String b64, String name, String mime) {
+                  try {
+                    byte[] data = android.util.Base64.decode(b64, android.util.Base64.DEFAULT);
+                    android.content.ContentValues v = new android.content.ContentValues();
+                    v.put(android.provider.MediaStore.Images.Media.DISPLAY_NAME, name);
+                    v.put(android.provider.MediaStore.Images.Media.MIME_TYPE, mime);
+                    if (android.os.Build.VERSION.SDK_INT >= 29) {
+                      v.put(android.provider.MediaStore.Images.Media.RELATIVE_PATH, "Pictures/LightCraft");
+                      v.put(android.provider.MediaStore.Images.Media.IS_PENDING, 1);
+                    }
+                    android.content.ContentResolver r = getContentResolver();
+                    android.net.Uri u = r.insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, v);
+                    java.io.OutputStream o = r.openOutputStream(u);
+                    o.write(data);
+                    o.close();
+                    if (android.os.Build.VERSION.SDK_INT >= 29) {
+                      v.clear();
+                      v.put(android.provider.MediaStore.Images.Media.IS_PENDING, 0);
+                      r.update(u, v, null, null);
+                    }
+                    return "ok";
+                  } catch (Exception e) {
+                    return "err: " + e.getMessage();
+                  }
+                }
+                @JavascriptInterface public void nativeStart(final boolean front) { runOnUiThread(() -> startNative(front)); }
+                @JavascriptInterface public void nativeStop() { runOnUiThread(() -> stopNative()); }
+                @JavascriptInterface public void nativeRect(final int l, final int t, final int w, final int h) { runOnUiThread(() -> setRect(l, t, w, h)); }
+                @JavascriptInterface public void nativeZoom(final double z) {
+                  runOnUiThread(() -> { if (camera != null) camera.getCameraControl().setZoomRatio((float) z); });
+                }
+                @JavascriptInterface public void nativeEv(final double ev) {
+                  runOnUiThread(() -> {
+                    if (camera != null && evStep > 0) camera.getCameraControl().setExposureCompensationIndex((int) Math.round(ev / evStep));
+                  });
+                }
+                @JavascriptInterface public void nativeFlash(final int mode) {
+                  runOnUiThread(() -> {
+                    if (imageCapture != null) {
+                      imageCapture.setFlashMode(mode == 1 ? ImageCapture.FLASH_MODE_ON : (mode == 2 ? ImageCapture.FLASH_MODE_AUTO : ImageCapture.FLASH_MODE_OFF));
+                    }
+                  });
+                }
+                @JavascriptInterface public void nativeFocus(final int x, final int y) {
+                  runOnUiThread(() -> {
+                    if (camera != null && pv != null) {
+                      MeteringPoint p = pv.getMeteringPointFactory().createPoint((float) x, (float) y);
+                      FocusMeteringAction a = new FocusMeteringAction.Builder(p, FocusMeteringAction.FLAG_AF | FocusMeteringAction.FLAG_AE)
+                          .setAutoCancelDuration(4, TimeUnit.SECONDS).build();
+                      camera.getCameraControl().startFocusAndMetering(a);
+                    }
+                  });
+                }
+                @JavascriptInterface public void nativeShot() { runOnUiThread(() -> shoot()); }
+                @JavascriptInterface public String readFile(String path) {
+                  try {
+                    File f = new File(path);
+                    if (!f.getCanonicalPath().startsWith(getCacheDir().getCanonicalPath())) return "";
+                    FileInputStream in = new FileInputStream(f);
+                    byte[] buf = new byte[(int) f.length()];
+                    int off = 0;
+                    while (off < buf.length) {
+                      int n = in.read(buf, off, buf.length - off);
+                      if (n < 0) break;
+                      off += n;
+                    }
+                    in.close();
+                    f.delete();
+                    return android.util.Base64.encodeToString(buf, android.util.Base64.NO_WRAP);
+                  } catch (Exception e) {
+                    return "";
+                  }
+                }
+              }, "LCNative");
+            }
+
+            private void startNative(final boolean front) {
+              if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                pendingFront = front;
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, 77);
+                return;
+              }
+              final ListenableFuture<ProcessCameraProvider> f = ProcessCameraProvider.getInstance(this);
+              f.addListener(() -> {
+                try {
+                  provider = f.get();
+                  bindCamera(front);
+                } catch (Exception e) {
+                  js("window.lcNativeErr&&window.lcNativeErr('" + esc(String.valueOf(e)) + "')");
+                }
+              }, ContextCompat.getMainExecutor(this));
+            }
+
+            @Override
+            public void onRequestPermissionsResult(int code, @NonNull String[] perms, @NonNull int[] res) {
+              super.onRequestPermissionsResult(code, perms, res);
+              if (code == 77) {
+                if (res.length > 0 && res[0] == PackageManager.PERMISSION_GRANTED) startNative(pendingFront);
+                else js("window.lcNativeErr&&window.lcNativeErr('camera permission denied')");
+              }
+            }
+
+            private void removeViews() {
+              if (holder != null) {
+                ViewGroup p = (ViewGroup) holder.getParent();
+                if (p != null) p.removeView(holder);
+              }
+              holder = null;
+              pv = null;
+            }
+
+            private void bindCamera(boolean front) {
+              removeViews();
+              holder = new FrameLayout(this);
+              holder.setBackgroundColor(Color.BLACK);
+              pv = new PreviewView(this);
+              pv.setImplementationMode(PreviewView.ImplementationMode.COMPATIBLE);
+              pv.setScaleType(PreviewView.ScaleType.FILL_CENTER);
+              holder.addView(pv, new FrameLayout.LayoutParams(Math.max(rw, 1), Math.max(rh, 1)));
+              ViewGroup parent = (ViewGroup) getBridge().getWebView().getParent();
+              parent.addView(holder, 0, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+              getBridge().getWebView().setBackgroundColor(Color.TRANSPARENT);
+              setRect(rl, rt, rw, rh);
+              provider.unbindAll();
+              Preview preview = new Preview.Builder().build();
+              preview.setSurfaceProvider(pv.getSurfaceProvider());
+              imageCapture = new ImageCapture.Builder()
+                  .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+                  .setJpegQuality(100)
+                  .build();
+              CameraSelector sel = front ? CameraSelector.DEFAULT_FRONT_CAMERA : CameraSelector.DEFAULT_BACK_CAMERA;
+              camera = provider.bindToLifecycle(this, sel, preview, imageCapture);
+              double zmin = 1, zmax = 1, evMin = 0, evMax = 0;
+              ZoomState zs = camera.getCameraInfo().getZoomState().getValue();
+              if (zs != null) { zmin = zs.getMinZoomRatio(); zmax = zs.getMaxZoomRatio(); }
+              ExposureState es = camera.getCameraInfo().getExposureState();
+              evStep = 0;
+              if (es.isExposureCompensationSupported()) {
+                evStep = es.getExposureCompensationStep().doubleValue();
+                evMin = es.getExposureCompensationRange().getLower() * evStep;
+                evMax = es.getExposureCompensationRange().getUpper() * evStep;
+              }
+              boolean torch = camera.getCameraInfo().hasFlashUnit();
+              String json = "{\"zmin\":" + zmin + ",\"zmax\":" + zmax + ",\"evMin\":" + evMin + ",\"evMax\":" + evMax + ",\"torch\":" + torch + "}";
+              js("window.lcNativeReady&&window.lcNativeReady('" + json + "')");
+            }
+
+            private void setRect(int l, int t, int w, int h) {
+              rl = l; rt = t; rw = w; rh = h;
+              if (pv == null || w <= 0 || h <= 0) return;
+              FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(w, h);
+              lp.leftMargin = l;
+              lp.topMargin = t;
+              pv.setLayoutParams(lp);
+            }
+
+            private void stopNative() {
+              try { if (provider != null) provider.unbindAll(); } catch (Exception e) { }
+              removeViews();
+              camera = null;
+              imageCapture = null;
+              getBridge().getWebView().setBackgroundColor(Color.BLACK);
+            }
+
+            private void shoot() {
+              if (imageCapture == null) {
+                js("window.lcNativeShotErr&&window.lcNativeShotErr('camera not ready')");
+                return;
+              }
+              final File f = new File(getCacheDir(), "cap_" + System.currentTimeMillis() + ".jpg");
+              ImageCapture.OutputFileOptions o = new ImageCapture.OutputFileOptions.Builder(f).build();
+              imageCapture.takePicture(o, ContextCompat.getMainExecutor(this), new ImageCapture.OnImageSavedCallback() {
+                @Override public void onImageSaved(@NonNull ImageCapture.OutputFileResults r) {
+                  js("window.lcNativeShot&&window.lcNativeShot('" + f.getAbsolutePath() + "')");
+                }
+                @Override public void onError(@NonNull ImageCaptureException e) {
+                  js("window.lcNativeShotErr&&window.lcNativeShotErr('" + esc(e.getMessage()) + "')");
+                }
+              });
+            }
+
+            @Override
+            public boolean dispatchKeyEvent(KeyEvent e) {
+              int k = e.getKeyCode();
+              if (k == KeyEvent.KEYCODE_BACK) {
+                if (e.getAction() == KeyEvent.ACTION_UP) {
+                  runOnUiThread(() -> getBridge().getWebView().evaluateJavascript("(window.lcBack?window.lcBack():false)", v -> {
+                    if (!"true".equals(v)) finish();
+                  }));
+                }
+                return true;
+              }
+              if (camOn && (k == KeyEvent.KEYCODE_VOLUME_UP || k == KeyEvent.KEYCODE_VOLUME_DOWN)) {
+                if (e.getAction() == KeyEvent.ACTION_DOWN) {
+                  final String js = "window.lcVol&&window.lcVol('" + (k == KeyEvent.KEYCODE_VOLUME_UP ? "up" : "down") + "'," + e.getRepeatCount() + ")";
+                  runOnUiThread(() -> getBridge().getWebView().evaluateJavascript(js, null));
+                }
+                return true;
+              }
+              return super.dispatchKeyEvent(e);
+            }
+          }
+          EOF
+          cp $D/MainActivity.java.native $D/MainActivity.java
+          sed -i '/^dependencies {/a\    implementation "androidx.camera:camera-core:1.3.4"\n    implementation "androidx.camera:camera-camera2:1.3.4"\n    implementation "androidx.camera:camera-lifecycle:1.3.4"\n    implementation "androidx.camera:camera-view:1.3.4"' android/app/build.gradle
+          grep -n 'androidx.camera' android/app/build.gradle
       - run: npx cap sync android
-      - run: chmod +x gradlew && ./gradlew assembleDebug
-        working-directory: android
+      - name: Build APK (native camera first, safe fallback)
+        run: |
+          cd android
+          chmod +x gradlew
+          D=app/src/main/java/com/lightcraft/app
+          if ./gradlew assembleDebug > ../build-native.log 2>&1; then
+            echo native > ../build-kind.txt
+          else
+            echo "Native camera build failed. Building the web-camera version instead."
+            tail -60 ../build-native.log
+            cp $D/MainActivity.java.base $D/MainActivity.java
+            sed -i '/androidx.camera/d' app/build.gradle
+            ./gradlew assembleDebug > ../build-web.log 2>&1 || { tail -60 ../build-web.log; exit 1; }
+            echo web-only > ../build-kind.txt
+          fi
+          echo "Build kind: $(cat ../build-kind.txt)" >> $GITHUB_STEP_SUMMARY
+          echo "Build kind: $(cat ../build-kind.txt)"
       - uses: actions/upload-artifact@v4
         with:
           name: LightCraft-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
-
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: build-logs
+          path: |
+            build-native.log
+            build-web.log
+            buil
