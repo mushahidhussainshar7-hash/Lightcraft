@@ -282,6 +282,9 @@ jobs:
                   .build();
               CameraSelector sel = front ? CameraSelector.DEFAULT_FRONT_CAMERA : CameraSelector.DEFAULT_BACK_CAMERA;
               camera = provider.bindToLifecycle(this, sel, preview, imageCapture);
+              pv.getPreviewStreamState().observe(this, state -> {
+                if (state == PreviewView.StreamState.STREAMING) js("window.lcNativeStream&&window.lcNativeStream()");
+              });
               double zmin = 1, zmax = 1, evMin = 0, evMax = 0;
               ZoomState zs = camera.getCameraInfo().getZoomState().getValue();
               if (zs != null) { zmin = zs.getMinZoomRatio(); zmax = zs.getMaxZoomRatio(); }
@@ -377,12 +380,4 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: LightCraft-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: build-logs
-          path: |
-            build-native.log
-            build-web.log
-            buil
+          path: android/app/build/outputs/apk/debug/app-
